@@ -59,7 +59,7 @@ M.setup = function(user_opts)
   end
 
   -- set up diagnostics
-  require('cosmic-ui.diagnostics').init(user_opts.diagnostic)
+  require('cosmic-ui.diagnostics').init(user_opts)
 
   -- set up hover
   require('cosmic-ui.hover').init(user_opts.hover)

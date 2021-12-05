@@ -1,7 +1,6 @@
-local icons = require('cosmic-ui.icons')
 local M = {}
 
-local function do_diagnostic_signs()
+local function do_diagnostic_signs(icons)
   local signs = {
     Error = icons.error .. ' ',
     Warn = icons.warn .. ' ',
@@ -18,7 +17,7 @@ local function do_diagnostic_signs()
   end
 end
 
-local function do_legacy_diagnostic_signs()
+local function do_legacy_diagnostic_signs(icons)
   local signs = {
     Error = icons.error .. ' ',
     Warning = icons.warn .. ' ',
@@ -34,14 +33,14 @@ local function do_legacy_diagnostic_signs()
   end
 end
 
-M.init = function(diagnostic_opts)
+M.init = function(user_opts)
   -- set up LSP signs
-  do_diagnostic_signs()
-  do_legacy_diagnostic_signs()
+  do_diagnostic_signs(user_opts.icons)
+  do_legacy_diagnostic_signs(user_opts.icons)
 
   -- set up vim.diagnostics
   -- vim.diagnostic.config opts
-  vim.diagnostic.config(diagnostic_opts)
+  vim.diagnostic.config(user_opts.diagnostic)
 end
 
 return M
