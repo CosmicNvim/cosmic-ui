@@ -1,5 +1,13 @@
 <h1 align="center">💫 Cosmic-UI</h1>
 
+<p align="center">
+  <img alt="Neovim Minimum Version" src="https://img.shields.io/badge/Neovim-0.6.0+-blueviolet.svg?style=flat-square&logo=Neovim&logoColor=white)](https://github.com/neovim/neovim">
+  <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/CosmicNvim/cosmic-ui?style=flat-square&logo=Github">
+  <a href="https://discord.gg/EwdrKzVbvJ">
+    <img alt="Discord" src="https://img.shields.io/discord/901609359291854899?style=flat-square&logo=Discord">
+  </a>
+</p>
+
 ## 🚀 Stellar Features
 
 Cosmic-UI is a simple wrapper around specific vim functionality. Built in order to provide a quick and easy way to create a Cosmic UI experience with Neovim!
