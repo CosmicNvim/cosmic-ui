@@ -6,7 +6,7 @@ Cosmic-UI is a simple wrapper around specific vim functionality. Built in order 
 
 It provides customizable UI defaults as well as utility methods.
 
-- Sane `vim.diagnostics` defaults
+- Sane `vim.diagnostic` defaults
 - Sets borders around common UI elements
   - Signature help
   - Hover
@@ -79,7 +79,7 @@ You may override any of the settings below by passing a config object to `.setup
     hint = '',
   },
   -- see h: vim.diagnostic.config
-  diagnostics = {
+  diagnostic = {
     underline = true,
     signs = true,
     update_in_insert = false,

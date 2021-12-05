@@ -14,7 +14,7 @@ local default_user_opts = {
     error = '',
     hint = '',
   },
-  diagnostics = {
+  diagnostic = {
     underline = true,
     signs = true,
     update_in_insert = false,
@@ -59,7 +59,7 @@ M.setup = function(user_opts)
   end
 
   -- set up diagnostics
-  require('cosmic-ui.diagnostics').init(user_opts.diagnostics)
+  require('cosmic-ui.diagnostics').init(user_opts.diagnostic)
 
   -- set up hover
   require('cosmic-ui.hover').init(user_opts.hover)

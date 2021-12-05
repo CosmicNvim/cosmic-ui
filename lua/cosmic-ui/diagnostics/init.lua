@@ -1,6 +1,6 @@
 local icons = require('cosmic-ui.icons')
-local utils = require('cosmic-ui.utils')
 local M = {}
+
 local function do_diagnostic_signs()
   local signs = {
     Error = icons.error .. ' ',
