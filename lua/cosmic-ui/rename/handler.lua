@@ -1,4 +1,5 @@
 return function(...)
+  local utils = require('cosmic-ui.utils')
   local result
   local method
   local err = select(1, ...)
