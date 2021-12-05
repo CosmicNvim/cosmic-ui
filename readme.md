@@ -2,7 +2,7 @@
 
 ## 🚀 Stellar Features
 
-Cosmic-UI is a simple wrapper around specific vim (and common plugin) functionality in order to provide a quick and easy way to create a Cosmic Neovim experience!
+Cosmic-UI is a simple wrapper around specific vim functionality. Built in order to provide a quick and easy way to create a Cosmic UI experience with Neovim!
 
 It provides customizable UI defaults as well as utility methods.
 
