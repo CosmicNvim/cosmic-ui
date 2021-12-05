@@ -51,18 +51,22 @@ M.setup = function(user_opts)
 
   -- set up lsp_signature if enabled
   local ok, lsp_signature = pcall(require, 'lsp_signature')
-  if ok and user_opts.signature_help ~= false then
+  if ok and user_opts.lsp_signature ~= false then
     lsp_signature.setup(user_opts.lsp_signature)
-  else
+  elseif user_opts.signature_help ~= false then
     -- set up signatureHelp
     require('cosmic-ui.signature-help').init(user_opts.signature_help)
   end
 
-  -- set up diagnostics
-  require('cosmic-ui.diagnostics').init(user_opts)
+  if user_opts.diagnostic ~= false then
+    -- set up diagnostics
+    require('cosmic-ui.diagnostics').init(user_opts)
+  end
 
-  -- set up hover
-  require('cosmic-ui.hover').init(user_opts.hover)
+  if user_opts.hover ~= false then
+    -- set up hover
+    require('cosmic-ui.hover').init(user_opts.hover)
+  end
 end
 
 M.rename = function(popup_opts, opts)

@@ -62,13 +62,6 @@ You may override any of the settings below by passing a config object to `.setup
 
 ```lua
 {
-  -- lsp_signature settings
-  lsp_signature = {
-    bind = true, -- This is mandatory, otherwise border config won't get registered.
-    handler_opts = {
-      border = 'rounded',
-    },
-  },
   -- icons used for lsp diagnostic signs
   icons = {
     warn = '',
@@ -76,6 +69,16 @@ You may override any of the settings below by passing a config object to `.setup
     error = '',
     hint = '',
   },
+
+  -- lsp_signature settings
+  -- `false` to disable
+  lsp_signature = {
+    bind = true,
+    handler_opts = {
+      border = 'rounded',
+    },
+  },
+
   -- see h: vim.diagnostic.config
   diagnostic = {
     underline = true,
@@ -95,20 +98,28 @@ You may override any of the settings below by passing a config object to `.setup
       },
     },
   },
+
   -- settings for vim.lsp.handlers['textDocument/hover']
+  -- `false` to disable
   hover = {
+
     -- override default handler
     handler = vim.lsp.handlers.hover,
-    -- see h: lsp-handler-configuration
+
+    -- see :h lsp-handlers
     float = {
       border = 'rounded',
     },
   },
+
   -- settings for vim.lsp.handlers['textDocument/signatureHelp']
+  -- `false` to disable
   signature_help = {
+
     -- override default handler
     handler = vim.lsp.handlers.signature_help,
-    -- see h: lsp-handler-configuration
+
+    -- see :h lsp-handlers
     float = {
       border = 'rounded',
     },
