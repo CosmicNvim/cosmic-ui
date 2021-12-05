@@ -80,6 +80,7 @@ You may override any of the settings below by passing a config object to `.setup
   },
 
   -- see h: vim.diagnostic.config
+  -- `false` to disable
   diagnostic = {
     underline = true,
     signs = true,
