@@ -48,23 +48,10 @@ local default_user_opts = {
   },
 }
 
-local function set_user_border(border, user_config)
-  for k, v in pairs(user_config) do
-    if k == 'border' then
-      user_config[k] = border
-    end
-
-    if type(v) == 'table' then
-      set_user_border(border, v)
-    end
-  end
-
-  return user_config
-end
-
 M.setup = function(user_opts)
+  user_opts = user_opts or {}
   -- get default opts with borders set from user config
-  local default_opts = set_user_border(user_opts.border or default_border, default_user_opts)
+  local default_opts = utils.set_user_border(user_opts.border or default_border, default_user_opts)
   -- merge opts
   user_opts = utils.merge(default_opts, user_opts or {})
 
@@ -86,6 +73,12 @@ M.setup = function(user_opts)
     -- set up hover
     require('cosmic-ui.hover').init(user_opts.hover)
   end
+end
+
+M.setup_autocomplete = function(opts, border)
+  -- @TODO: should be pulled from options set in .setup
+  border = border or default_border
+  require('cosmic-ui.autocomplete').init(opts or {}, border)
 end
 
 M.rename = function(popup_opts, opts)
