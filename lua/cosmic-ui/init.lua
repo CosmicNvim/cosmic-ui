@@ -1,11 +1,13 @@
 local utils = require('cosmic-ui.utils')
 local M = {}
 
+local default_border = 'rounded'
 local default_user_opts = {
+  -- border = 'rounded',
   lsp_signature = {
     bind = true, -- This is mandatory, otherwise border config won't get registered.
     handler_opts = {
-      border = 'rounded',
+      border = '',
     },
   },
   icons = {
@@ -22,7 +24,7 @@ local default_user_opts = {
     float = {
       header = false,
       source = 'always',
-      border = 'rounded',
+      border = '',
     },
     virtual_text = {
       spacing = 4,
@@ -35,19 +37,36 @@ local default_user_opts = {
   hover = {
     handler = vim.lsp.handlers.hover,
     float = {
-      border = 'rounded',
+      border = '',
     },
   },
   signature_help = {
     handler = vim.lsp.handlers.signature_help,
     float = {
-      border = 'rounded',
+      border = '',
     },
   },
 }
 
+local function set_user_border(border, user_config)
+  for k, v in pairs(user_config) do
+    if k == 'border' then
+      user_config[k] = border
+    end
+
+    if type(v) == 'table' then
+      set_user_border(border, v)
+    end
+  end
+
+  return user_config
+end
+
 M.setup = function(user_opts)
-  user_opts = utils.merge(default_user_opts, user_opts or {})
+  -- get default opts with borders set from user config
+  local default_opts = set_user_border(user_opts.border or default_border, default_user_opts)
+  -- merge opts
+  user_opts = utils.merge(default_opts, user_opts or {})
 
   -- set up lsp_signature if enabled
   local ok, lsp_signature = pcall(require, 'lsp_signature')

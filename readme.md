@@ -65,21 +65,16 @@ You may override any of the settings below by passing a config object to `.setup
 
 ```lua
 {
+  -- default border to use
+  -- 'single', 'double', 'rounded', 'solid', 'shadow'
+  border = 'rounded'
+
   -- icons used for lsp diagnostic signs
   icons = {
     warn = '',
     info = '',
     error = '',
     hint = '',
-  },
-
-  -- lsp_signature settings
-  -- `false` to disable
-  lsp_signature = {
-    bind = true,
-    handler_opts = {
-      border = 'rounded',
-    },
   },
 
   -- see h: vim.diagnostic.config
@@ -92,6 +87,7 @@ You may override any of the settings below by passing a config object to `.setup
     float = {
       header = false,
       source = 'always',
+      -- override border if desired
       border = 'rounded',
     },
     virtual_text = {
@@ -112,8 +108,10 @@ You may override any of the settings below by passing a config object to `.setup
 
     -- see :h lsp-handlers
     float = {
+      -- override border if desired
       border = 'rounded',
     },
+
   },
 
   -- settings for vim.lsp.handlers['textDocument/signatureHelp']
@@ -125,9 +123,22 @@ You may override any of the settings below by passing a config object to `.setup
 
     -- see :h lsp-handlers
     float = {
+      -- override border if desired
+      border = 'rounded',
+    },
+
+  },
+
+  -- lsp_signature settings
+  -- `false` to disable
+  lsp_signature = {
+    bind = true,
+    handler_opts = {
+      -- override border if desired
       border = 'rounded',
     },
   },
+
 }
 ```
 
