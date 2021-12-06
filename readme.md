@@ -25,13 +25,8 @@ It provides customizable UI defaults as well as utility methods.
 _Coming soon..._
 
 - Code Actions
+- Autocomplete
 - ???
-
-_Why not autocomplete?_
-
-Well.. Not everyone uses autocomplete and on top of that,
-there are quite a few common autocompletion plugins that being able to
-provide integrations for all of them is unmanagable.
 
 ## 🛠 Installation
 
@@ -153,4 +148,3 @@ map('n', 'gn', '<cmd>lua require("cosmic-ui").rename()<cr>')
 ```
 
 <img width="341" alt="Screen Shot 2021-12-04 at 5 21 50 PM" src="https://user-images.githubusercontent.com/3721204/144729678-ab054d0b-98bb-45c7-9d2a-e380cc5cc1bd.png">
-
