@@ -91,29 +91,21 @@ local default_cmp_opts = {
   formatting = get_formatting(),
 }
 
-M.init = function(opts, border)
+M.init = function(provider_opts)
   vim.cmd([[
   autocmd FileType TelescopePrompt lua require('cmp').setup.buffer { enabled = false }
   ]])
 
-  local default_opts = utils.set_user_border(border, default_cmp_opts)
-  local cmp_opts = utils.merge(default_opts, opts)
+  local opts = utils.merge(default_cmp_opts, provider_opts)
+  opts = utils.set_border(_G.CosmicUI_user_opts.border, opts)
 
-  cmp.setup(cmp_opts)
+  cmp.setup(opts)
 
   cmp.setup.cmdline('/', {
     sources = {
       { name = 'buffer' },
     },
   })
-
-  --[[ cmp.setup.cmdline(':', {
-    sources = cmp.config.sources({
-      { name = 'path' },
-    }, {
-      { name = 'cmdline' },
-    }),
-  }) ]]
 end
 
 return M

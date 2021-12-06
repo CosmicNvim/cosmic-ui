@@ -46,14 +46,14 @@ M.default_mappings = function(input)
   end)
 end
 
-M.set_user_border = function(border, user_config)
+M.set_border = function(border, user_config)
   for k, v in pairs(user_config) do
     if k == 'border' then
       user_config[k] = border
     end
 
     if type(v) == 'table' then
-      M.set_user_border(border, v)
+      M.set_border(border, v)
     end
   end
 

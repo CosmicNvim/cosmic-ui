@@ -1,9 +1,10 @@
 local utils = require('cosmic-ui.utils')
 local M = {}
 
-local default_border = 'rounded'
+local default_border = 'single'
 local default_user_opts = {
   -- border = 'rounded',
+  autocomplete = false,
   lsp_signature = {
     bind = true, -- This is mandatory, otherwise border config won't get registered.
     handler_opts = {
@@ -48,12 +49,15 @@ local default_user_opts = {
   },
 }
 
+_G.CosmicUI_user_opts = {}
+
 M.setup = function(user_opts)
-  user_opts = user_opts or {}
   -- get default opts with borders set from user config
-  local default_opts = utils.set_user_border(user_opts.border or default_border, default_user_opts)
-  -- merge opts
-  user_opts = utils.merge(default_opts, user_opts or {})
+  local default_opts = utils.set_border(user_opts.border or default_border, default_user_opts)
+
+  -- get parsed user opts
+  _G.CosmicUI_user_opts = utils.merge(default_opts, user_opts or {})
+  user_opts = _G.CosmicUI_user_opts
 
   -- set up lsp_signature if enabled
   local ok, lsp_signature = pcall(require, 'lsp_signature')
@@ -73,12 +77,16 @@ M.setup = function(user_opts)
     -- set up hover
     require('cosmic-ui.hover').init(user_opts.hover)
   end
+
+  if type(user_opts.autocomplete) == 'table' then
+    M.setup_autocomplete(user_opts.autocomplete)
+  end
 end
 
-M.setup_autocomplete = function(opts, border)
+M.setup_autocomplete = function(provider_opts)
   -- @TODO: should be pulled from options set in .setup
-  border = border or default_border
-  require('cosmic-ui.autocomplete').init(opts or {}, border)
+  provider_opts = utils.merge(_G.CosmicUI_user_opts.autocomplete or {}, provider_opts)
+  require('cosmic-ui.autocomplete').init(provider_opts)
 end
 
 M.rename = function(popup_opts, opts)
