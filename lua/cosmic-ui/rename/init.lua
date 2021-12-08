@@ -13,25 +13,25 @@ local function rename(popup_opts, opts)
       col = 0,
     },
     size = {
-      width = 20,
+      width = 25,
       height = 2,
     },
     relative = 'cursor',
     border = {
       highlight = 'FloatBorder',
-      style = 'rounded',
+      style = _G.CosmicUI_user_opts.border,
       text = {
         top = ' Rename ',
         top_align = 'left',
       },
     },
     win_options = {
-      winhighlight = 'Normal:Normal',
+      winhighlight = 'NormalFloat:NormalFloat',
     },
   }
 
   local default_opts = {
-    prompt = '> ',
+    prompt = _G.CosmicUI_user_opts.rename.prompt,
     default_value = curr_name,
     on_submit = function(new_name)
       if not (new_name and #new_name > 0) or new_name == curr_name then

@@ -47,6 +47,9 @@ local default_user_opts = {
       border = '',
     },
   },
+  rename = {
+    prompt = '> ',
+  },
 }
 
 _G.CosmicUI_user_opts = {}
