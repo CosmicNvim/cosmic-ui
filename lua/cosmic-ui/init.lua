@@ -96,4 +96,8 @@ M.rename = function(popup_opts, opts)
   return require('cosmic-ui.rename')(popup_opts, opts)
 end
 
+M.code_actions = function(opts)
+  require('cosmic-ui.code-action').code_actions(opts)
+end
+
 return M
