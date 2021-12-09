@@ -149,6 +149,12 @@ M.code_actions = function(opts)
   -- mount the component
   menu:mount()
 
+  vim.api.nvim_buf_call(menu.bufnr, function()
+    if vim.fn.mode() ~= 'n' then
+      vim.api.nvim_input('<Esc>')
+    end
+  end)
+
   -- close menu when cursor leaves buffer
   menu:on(event.BufLeave, menu.menu_props.on_close, { once = true })
 end
