@@ -21,11 +21,13 @@ Cosmic-UI is a simple wrapper around specific vim functionality. Built in order 
   - Autocompletion documentation
   - Rename floating popup
   - Rename file change notification
+  - Code Actions
 
 _Coming soon..._
 
-- Code Actions
-- Highlights?
+- Highlighting documentation
+- Preview windows?
+- LSP definition, references, etc?
 
 ## 🛠 Installation
 
@@ -186,6 +188,13 @@ function map(mode, lhs, rhs, opts)
 end
 
 map('n', 'gn', '<cmd>lua require("cosmic-ui").rename()<cr>')
+```
+
+#### Code Actions
+
+```lua
+map('n', '<leader>ga', '<cmd>lua require("cosmic-ui").code_actions()<cr>')
+map('v', '<leader>ga', '<cmd>lua require("cosmic-ui").range_code_actions()<cr>')
 ```
 
 ## 📷 Screenshots
