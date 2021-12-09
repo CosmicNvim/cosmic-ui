@@ -26,7 +26,7 @@ local function rename(popup_opts, opts)
       },
     },
     win_options = {
-      winhighlight = 'NormalFloat:NormalFloat',
+      winhighlight = 'Normal:Normal',
     },
   }
 
