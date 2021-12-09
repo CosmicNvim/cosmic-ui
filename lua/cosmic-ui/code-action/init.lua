@@ -62,12 +62,13 @@ M.code_actions = function(opts)
   end
 
   local menu_items = {}
+  local min_width = 0
 
   for client_id, response in pairs(results_lsp) do
     if response.result then
       local client = vim.lsp.get_client_by_id(client_id)
 
-      table.insert(menu_items, Menu.separator(client.name))
+      table.insert(menu_items, Menu.separator('[' .. client.name .. ']'))
 
       for _, result in pairs(response.result) do
         local command_title = result.title:gsub('\r\n', '\\r\\n'):gsub('\n', '\\n')
@@ -80,6 +81,7 @@ M.code_actions = function(opts)
           command = result,
         }
 
+        min_width = math.max(min_width, #command_title)
         table.insert(menu_items, item)
       end
     end
@@ -112,8 +114,9 @@ M.code_actions = function(opts)
     },
   }, {
     lines = menu_items,
+    min_width = math.max(min_width, 30),
     separator = {
-      char = '-',
+      char = ' ',
       text_align = 'center',
     },
     keymap = {
