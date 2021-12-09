@@ -68,7 +68,7 @@ M.code_actions = function(opts)
   local min_width = 0
 
   for client_id, response in pairs(results_lsp) do
-    if response.result then
+    if response.result and not vim.tbl_isempty(response.result) then
       local client = vim.lsp.get_client_by_id(client_id)
 
       table.insert(menu_items, Menu.separator('[' .. client.name .. ']'))
