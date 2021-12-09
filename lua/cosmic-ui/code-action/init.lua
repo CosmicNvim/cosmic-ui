@@ -3,6 +3,7 @@
 local Menu = require('nui.menu')
 local NuiText = require('nui.text')
 local event = require('nui.utils.autocmd').event
+local utils = require('cosmic-ui.utils')
 local M = {}
 
 local function fix_zero_version(workspace_edit)
@@ -45,14 +46,16 @@ local function execute_action(action)
 end
 
 M.code_actions = function(opts)
-  local params = opts and opts.params or vim.lsp.util.make_range_params()
-  local timeout = opts and opts.timeout or 3000
+  opts = utils.merge({
+    timeout = 2000,
+    params = vim.lsp.util.make_range_params(),
+  }, opts or {})
 
-  params.context = {
+  opts.params.context = {
     diagnostics = vim.lsp.diagnostic.get_line_diagnostics(),
   }
 
-  local results_lsp, _ = vim.lsp.buf_request_sync(0, 'textDocument/codeAction', params, timeout)
+  local results_lsp, _ = vim.lsp.buf_request_sync(0, 'textDocument/codeAction', opts.params, opts.timeout)
 
   if not results_lsp or vim.tbl_isempty(results_lsp) then
     vim.notify('No results from textDocument/codeAction', vim.log.levels.WARN, {

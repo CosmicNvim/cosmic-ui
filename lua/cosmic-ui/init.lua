@@ -100,4 +100,11 @@ M.code_actions = function(opts)
   require('cosmic-ui.code-action').code_actions(opts)
 end
 
+M.range_code_actions = function(opts)
+  opts = utils.merge({
+    params = vim.lsp.util.make_given_range_params(),
+  }, opts or {})
+  M.code_actions(opts)
+end
+
 return M
