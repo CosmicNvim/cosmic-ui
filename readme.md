@@ -29,6 +29,16 @@ _Coming soon..._
 - Preview windows?
 - LSP definition, references, etc?
 
+
+## 📷 Screenshots
+
+### Code Actions
+<img width="613" alt="Screen Shot 2021-12-10 at 3 37 38 PM" src="https://user-images.githubusercontent.com/3721204/145654798-84c88a69-414e-457b-b595-e76b767ea5d3.png">
+
+### Rename Floating Popup
+
+<img width="341" alt="Screen Shot 2021-12-04 at 5 21 50 PM" src="https://user-images.githubusercontent.com/3721204/144729678-ab054d0b-98bb-45c7-9d2a-e380cc5cc1bd.png">
+
 ## 🛠 Installation
 
 ```lua
@@ -196,11 +206,5 @@ map('n', 'gn', '<cmd>lua require("cosmic-ui").rename()<cr>')
 map('n', '<leader>ga', '<cmd>lua require("cosmic-ui").code_actions()<cr>')
 map('v', '<leader>ga', '<cmd>lua require("cosmic-ui").range_code_actions()<cr>')
 ```
-
-## 📷 Screenshots
-
-### Rename Floating Popup
-
-<img width="341" alt="Screen Shot 2021-12-04 at 5 21 50 PM" src="https://user-images.githubusercontent.com/3721204/144729678-ab054d0b-98bb-45c7-9d2a-e380cc5cc1bd.png">
 
 _More coming soon..._
