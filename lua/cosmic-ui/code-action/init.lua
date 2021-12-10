@@ -64,14 +64,17 @@ M.code_actions = function(opts)
     return
   end
 
+  -- items for menu
   local menu_items = {}
+  -- result items to filter through
+  local result_items = {}
   local min_width = 0
 
   for client_id, response in pairs(results_lsp) do
     if response.result and not vim.tbl_isempty(response.result) then
       local client = vim.lsp.get_client_by_id(client_id)
 
-      table.insert(menu_items, Menu.separator('[' .. client.name .. ']'))
+      table.insert(menu_items, Menu.separator(NuiText('(' .. client.name .. ')', 'Comment')))
 
       for _, result in pairs(response.result) do
         local command_title = result.title:gsub('\r\n', '\\r\\n'):gsub('\n', '\\n')
@@ -84,8 +87,9 @@ M.code_actions = function(opts)
           command = result,
         }
 
-        min_width = math.max(min_width, #command_title)
+        min_width = math.max(min_width, #command_title, 30)
         table.insert(menu_items, item)
+        table.insert(result_items, item)
       end
     end
   end
@@ -96,7 +100,6 @@ M.code_actions = function(opts)
     })
     return
   end
-
   local menu = Menu({
     position = {
       row = 1,
@@ -117,7 +120,7 @@ M.code_actions = function(opts)
     },
   }, {
     lines = menu_items,
-    min_width = math.max(min_width, 30),
+    min_width = min_width,
     separator = {
       char = ' ',
       text_align = 'center',
@@ -128,6 +131,10 @@ M.code_actions = function(opts)
       close = { '<Esc>', '<C-c>' },
       submit = { '<CR>', '<Space>' },
     },
+    on_change = function(item, menu)
+      local pos = utils.index_of(result_items, item)
+      menu.border:set_text('bottom', '(' .. tostring(pos) .. '/' .. #result_items .. ')', 'right')
+    end,
     on_submit = function(item)
       local action = item.ctx.command
       local client = item.ctx.client

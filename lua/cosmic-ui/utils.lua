@@ -12,6 +12,14 @@ M.get_relative_path = function(file_path)
   return './' .. relative_path
 end
 
+M.index_of = function(tbl, item)
+  for i, val in ipairs(tbl) do
+    if val == item then
+      return i
+    end
+  end
+end
+
 -- Default backspace has inconsistent behavior, have to make our own (for now)
 -- Taken from here:
 -- https://github.com/neovim/neovim/issues/14116#issuecomment-976069244
