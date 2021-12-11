@@ -29,15 +29,15 @@ _Coming soon..._
 - Preview windows?
 - LSP definition, references, etc?
 
-
 ## 📷 Screenshots
 
 ### Code Actions
+
 <img width="613" alt="Screen Shot 2021-12-10 at 3 37 38 PM" src="https://user-images.githubusercontent.com/3721204/145654798-84c88a69-414e-457b-b595-e76b767ea5d3.png">
 
 ### Rename Floating Popup
 
-<img width="341" alt="Screen Shot 2021-12-04 at 5 21 50 PM" src="https://user-images.githubusercontent.com/3721204/144729678-ab054d0b-98bb-45c7-9d2a-e380cc5cc1bd.png">
+<img width="498" alt="Screen Shot 2021-12-10 at 4 22 28 PM" src="https://user-images.githubusercontent.com/3721204/145656501-e1aec4be-c8bc-4e59-8c2f-2d99d50bbea2.png">
 
 ## 🛠 Installation
 
@@ -180,6 +180,11 @@ You may override any of the settings below by passing a config object to `.setup
       border = 'rounded',
     },
   },
+
+  -- rename popup settings
+  rename = {
+    prompt = '> '
+  }
 
 }
 ```
