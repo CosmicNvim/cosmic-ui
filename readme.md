@@ -185,7 +185,6 @@ You may override any of the settings below by passing a config object to `.setup
   rename = {
     prompt = '> '
   }
-
 }
 ```
 
