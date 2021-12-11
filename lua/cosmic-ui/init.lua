@@ -50,6 +50,9 @@ local default_user_opts = {
   rename = {
     prompt = '> ',
   },
+  code_actions = {
+    popup_opts = {},
+  },
 }
 
 _G.CosmicUI_user_opts = {}

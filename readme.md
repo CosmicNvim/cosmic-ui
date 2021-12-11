@@ -185,6 +185,25 @@ You may override any of the settings below by passing a config object to `.setup
   rename = {
     prompt = '> '
   }
+
+  code_actions = {
+    popup_opts = {
+      position = {
+        row = 1,
+        col = 0,
+      },
+      relative = 'cursor',
+      border = {
+        highlight = 'FloatBorder',
+        text = {
+          top = 'Code Actions',
+          top_align = 'center',
+        },
+        padding = { 0, 1 },
+      },
+    },
+    min_width = {}
+  }
 }
 ```
 

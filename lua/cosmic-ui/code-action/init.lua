@@ -100,7 +100,8 @@ M.code_actions = function(opts)
     })
     return
   end
-  local menu = Menu({
+
+  local popup_opts = utils.merge({
     position = {
       row = 1,
       col = 0,
@@ -118,9 +119,11 @@ M.code_actions = function(opts)
     win_options = {
       winhighlight = 'Normal:Normal',
     },
-  }, {
+  }, _G.CosmicUI_user_opts.code_actions.popup_opts or {})
+
+  local menu = Menu(popup_opts, {
     lines = menu_items,
-    min_width = min_width,
+    min_width = _G.CosmicUI_user_opts.code_actions.min_width or min_width,
     separator = {
       char = ' ',
       text_align = 'center',

@@ -56,12 +56,8 @@ end
 
 M.set_border = function(border, user_config)
   for k, v in pairs(user_config) do
-    if k == 'border' then
+    if k == 'border' and not type(v) == 'table' then
       user_config[k] = border
-    end
-
-    if type(v) == 'table' then
-      M.set_border(border, v)
     end
   end
 
