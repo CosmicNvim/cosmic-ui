@@ -3,7 +3,6 @@ local utils = require('cosmic-ui.utils')
 local rename_handler = require('cosmic-ui.rename.handler')
 
 local function rename(popup_opts, opts)
-  opts = opts or {}
   local Input = require('nui.input')
   local event = require('nui.utils.autocmd').event
   local curr_name = vim.fn.expand('<cword>')
@@ -43,10 +42,16 @@ local function rename(popup_opts, opts)
     end,
   }
 
-  local input = Input(utils.merge(default_popup_opts, popup_opts), utils.merge(default_opts, opts))
+  opts = utils.merge(default_opts, opts or {})
+  popup_opts = utils.merge(default_popup_opts, popup_opts or {})
+  local input = Input(popup_opts, opts)
 
   -- mount/open the component
   input:mount()
+
+  -- las value is length of highlight
+  vim.api.nvim_buf_add_highlight(input.bufnr, -1, 'LspRenamePrompt', 0, 0, #opts.prompt)
+  vim.cmd('hi link LspRenamePrompt Comment')
 
   utils.default_mappings(input)
 
