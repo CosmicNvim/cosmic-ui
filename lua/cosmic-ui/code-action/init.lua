@@ -142,17 +142,26 @@ M.code_actions = function(opts)
       local action = item.ctx.command
       local client = item.ctx.client
 
-      client.request('codeAction/resolve', action, function(resolved_err, resolved_action)
-        if resolved_err then
-          vim.notify(resolved_err.code .. ': ' .. resolved_err.message, vim.log.levels.ERROR)
-          return
-        end
-        if resolved_action then
-          execute_action(transform_action(resolved_action))
-        else
-          execute_action(transform_action(action))
-        end
-      end)
+      if
+        not action.edit
+        and client
+        and type(client.resolved_capabilities.code_action) == 'table'
+        and client.resolved_capabilities.code_action.resolveProvider
+      then
+        client.request('codeAction/resolve', action, function(resolved_err, resolved_action)
+          if resolved_err then
+            vim.notify(resolved_err.code .. ': ' .. resolved_err.message, vim.log.levels.ERROR)
+            return
+          end
+          if resolved_action then
+            execute_action(transform_action(resolved_action))
+          else
+            execute_action(transform_action(action))
+          end
+        end)
+      else
+        execute_action(transform_action(action))
+      end
     end,
   })
 
