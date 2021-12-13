@@ -39,7 +39,7 @@ local map = function(input, lhs, rhs)
 end
 
 M.default_mappings = function(input)
-  local prompt = input.input_props.prompt:len()
+  local prompt = input.input_props.prompt._length
 
   map(input, '<ESC>', function()
     input.input_props.on_close()
