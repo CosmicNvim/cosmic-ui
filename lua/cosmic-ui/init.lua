@@ -3,8 +3,7 @@ local M = {}
 
 local default_border = 'single'
 local default_user_opts = {
-  -- border = 'rounded',
-  autocomplete = false,
+  border = default_border,
   lsp_signature = {
     bind = true, -- This is mandatory, otherwise border config won't get registered.
     handler_opts = {
@@ -38,13 +37,13 @@ local default_user_opts = {
   hover = {
     handler = vim.lsp.handlers.hover,
     float = {
-      border = '',
+      border = default_border,
     },
   },
   signature_help = {
     handler = vim.lsp.handlers.signature_help,
     float = {
-      border = '',
+      border = default_border,
     },
   },
   rename = {
@@ -83,16 +82,6 @@ M.setup = function(user_opts)
     -- set up hover
     require('cosmic-ui.hover').init(user_opts.hover)
   end
-
-  if type(user_opts.autocomplete) == 'table' then
-    M.setup_autocomplete(user_opts.autocomplete)
-  end
-end
-
-M.setup_autocomplete = function(provider_opts)
-  -- @TODO: should be pulled from options set in .setup
-  provider_opts = utils.merge(_G.CosmicUI_user_opts.autocomplete or {}, provider_opts)
-  require('cosmic-ui.autocomplete').init(provider_opts)
 end
 
 M.rename = function(popup_opts, opts)
@@ -108,6 +97,10 @@ M.range_code_actions = function(opts)
     params = vim.lsp.util.make_given_range_params(),
   }, opts or {})
   M.code_actions(opts)
+end
+
+M.get_border = function()
+  return _G.CosmicUI_user_opts.border
 end
 
 return M

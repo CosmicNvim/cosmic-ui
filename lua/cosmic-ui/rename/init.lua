@@ -43,7 +43,7 @@ local function rename(popup_opts, opts)
   }
 
   opts = utils.merge(default_opts, opts or {})
-  popup_opts = utils.merge(default_popup_opts, popup_opts or {})
+  popup_opts = utils.merge(default_popup_opts, _G.CosmicUI_user_opts.code_actions.popup_opts or {}, popup_opts or {})
   local input = Input(popup_opts, opts)
 
   -- mount/open the component

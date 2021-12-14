@@ -1,7 +1,7 @@
 local M = {}
 
-M.merge = function(defaults, opts)
-  return vim.tbl_deep_extend('force', defaults, opts or {})
+M.merge = function(...)
+  return vim.tbl_deep_extend('force', ...)
 end
 
 M.get_relative_path = function(file_path)

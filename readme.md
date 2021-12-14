@@ -18,16 +18,13 @@ Cosmic-UI is a simple wrapper around specific vim functionality. Built in order 
 - LSP UI
   - Signature help
   - Hover
-  - Autocompletion documentation
-  - Rename floating popup
-  - Rename file change notification
+  - Rename floating popup & file change notification
   - Code Actions
+- Exports values such as the border value set in `.setup` to use elsewhere in your configuration
 
 _Coming soon..._
 
 - Highlighting documentation
-- Preview windows?
-- LSP definition, references, etc?
 
 ## 📷 Screenshots
 
@@ -44,55 +41,23 @@ _Coming soon..._
 ```lua
   use({
     'CosmicNvim/cosmic-ui',
-    config = function()
-      require('cosmic-ui').setup()
-    end,
     requires = { 'MunifTanjim/nui.nvim', 'nvim-lua/plenary.nvim' },
-  })
-```
-
-To enable `lsp_signature` integration, ensure that `cosmic-ui` initializes _after_ your LSP servers
-
-```lua
-  use({
-    'CosmicNvim/cosmic-ui',
     config = function()
       require('cosmic-ui').setup()
     end,
-    requires = { 'MunifTanjim/nui.nvim', 'nvim-lua/plenary.nvim', 'ray-x/lsp_signature.nvim' },
-    after = 'nvim-lspconfig',
   })
 ```
 
-Autocomplete functionality is disabled by default, if you would like to set it up. Ensure that Cosmic-UI is also initialized after nvim-cmp.
+To enable `lsp_signature` integration, ensure that `cosmic-ui` initializes _after_ your LSP servers. This is a requirement of `lsp_signature` itself.
 
 ```lua
   use({
     'CosmicNvim/cosmic-ui',
     requires = { 'MunifTanjim/nui.nvim', 'nvim-lua/plenary.nvim', 'ray-x/lsp_signature.nvim' },
     config = function()
-      require('cosmic-ui').setup({
-          autocomplete = {
-            -- add any nvim-cmp settings you would like to override
-          }
-      })
+      require('cosmic-ui').setup()
     end,
-  })
-```
-
-If you would like to continue to lazy load nvim-cmp, you may alter your setup to the below.
-
-```lua
-  use({
-    'hrsh7th/nvim-cmp',
-    config = function()
-      require('cosmic-ui').setup_autocomplete({
-          -- add any nvim-cmp settings you would like to override
-      })
-    end,
-    requires = {...},
-    event = 'InsertEnter',
-    disable = vim.tbl_contains(user_plugins.disable, 'autocomplete'),
+    after = 'nvim-lspconfig',
   })
 ```
 
@@ -115,9 +80,6 @@ You may override any of the settings below by passing a config object to `.setup
     error = '',
     hint = '',
   },
-
-  -- autocomplete settings, see `:h cmp-config`
-  autocomplete = false,
 
   -- see h: vim.diagnostic.config
   -- `false` to disable
@@ -174,7 +136,6 @@ You may override any of the settings below by passing a config object to `.setup
   -- lsp_signature settings
   -- `false` to disable
   lsp_signature = {
-    bind = true,
     handler_opts = {
       -- override border if desired
       border = 'rounded',
@@ -207,7 +168,7 @@ You may override any of the settings below by passing a config object to `.setup
 }
 ```
 
-## ✨ Utilities
+## ✨ Usage
 
 #### Rename
 
