@@ -191,4 +191,11 @@ map('n', '<leader>ga', '<cmd>lua require("cosmic-ui").code_actions()<cr>')
 map('v', '<leader>ga', '<cmd>lua require("cosmic-ui").range_code_actions()<cr>')
 ```
 
+#### Get border
+
+```lua
+local cosmic_ui = require('cosmic-ui')
+local border = cosmic_ui.get_border()
+```
+
 _More coming soon..._
