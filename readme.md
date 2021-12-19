@@ -10,21 +10,13 @@
 
 ## 🚀 Stellar Features
 
+_Warning: Under heavy development_
+
 Cosmic-UI is a simple wrapper around specific vim functionality. Built in order to provide a quick and easy way to create a Cosmic UI experience with Neovim!
 
-- Diagnostics UI
-  - Sane `vim.diagnostic` default settings
-  - Pretty sign icons
-- LSP UI
-  - Signature help
-  - Hover
-  - Rename floating popup & file change notification
-  - Code Actions
+- Rename floating popup & file change notification
+- Code Actions
 - Exports values such as the border value set in `.setup` to use elsewhere in your configuration
-
-_Coming soon..._
-
-- Highlighting documentation
 
 ## 📷 Screenshots
 
