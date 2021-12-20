@@ -4,14 +4,9 @@ local M = {}
 local default_border = 'single'
 local default_user_opts = {
   border = default_border,
-  icons = {
-    warn = '',
-    info = '',
-    error = '',
-    hint = '',
-  },
   rename = {
     prompt = '> ',
+    popup_opts = {},
   },
   code_actions = {
     popup_opts = {},

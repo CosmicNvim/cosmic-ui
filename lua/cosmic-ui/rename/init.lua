@@ -6,7 +6,8 @@ local function rename(popup_opts, opts)
   local Input = require('nui.input')
   local event = require('nui.utils.autocmd').event
   local curr_name = vim.fn.expand('<cword>')
-  local default_popup_opts = {
+
+  popup_opts = utils.merge({
     position = {
       row = 1,
       col = 0,
@@ -27,9 +28,9 @@ local function rename(popup_opts, opts)
     win_options = {
       winhighlight = 'Normal:Normal',
     },
-  }
+  }, _G.CosmicUI_user_opts.rename.popup_opts or {}, popup_opts or {})
 
-  local default_opts = {
+  opts = utils.merge({
     prompt = _G.CosmicUI_user_opts.rename.prompt,
     default_value = curr_name,
     on_submit = function(new_name)
@@ -40,10 +41,8 @@ local function rename(popup_opts, opts)
       params.newName = new_name
       lsp.buf_request(0, 'textDocument/rename', params, rename_handler)
     end,
-  }
+  }, opts or {})
 
-  opts = utils.merge(default_opts, opts or {})
-  popup_opts = utils.merge(default_popup_opts, _G.CosmicUI_user_opts.code_actions.popup_opts or {}, popup_opts or {})
   local input = Input(popup_opts, opts)
 
   -- mount/open the component

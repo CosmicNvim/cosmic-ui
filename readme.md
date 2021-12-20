@@ -40,19 +40,6 @@ Cosmic-UI is a simple wrapper around specific vim functionality. Built in order 
   })
 ```
 
-To enable `lsp_signature` integration, ensure that `cosmic-ui` initializes _after_ your LSP servers. This is a requirement of `lsp_signature` itself.
-
-```lua
-  use({
-    'CosmicNvim/cosmic-ui',
-    requires = { 'MunifTanjim/nui.nvim', 'nvim-lua/plenary.nvim', 'ray-x/lsp_signature.nvim' },
-    config = function()
-      require('cosmic-ui').setup()
-    end,
-    after = 'nvim-lspconfig',
-  })
-```
-
 <!-- This is because `Cosmic-UI` will initialize `lsp_signature.nvim`, which must be set up after LSP server in order to properly hook into the correct LSP handler. -->
 
 ## ⚙️ Configuration
@@ -63,83 +50,12 @@ You may override any of the settings below by passing a config object to `.setup
 {
   -- default border to use
   -- 'single', 'double', 'rounded', 'solid', 'shadow'
-  border = 'rounded'
-
-  -- icons used for lsp diagnostic signs
-  icons = {
-    warn = '',
-    info = '',
-    error = '',
-    hint = '',
-  },
-
-  -- see h: vim.diagnostic.config
-  -- `false` to disable
-  diagnostic = {
-    underline = true,
-    signs = true,
-    update_in_insert = false,
-    severity_sort = true,
-    float = {
-      header = false,
-      source = 'always',
-      -- override border if desired
-      border = 'rounded',
-    },
-    virtual_text = {
-      spacing = 4,
-      source = 'always',
-      severity = {
-        min = vim.diagnostic.severity.HINT,
-      },
-    },
-  },
-
-  -- settings for vim.lsp.handlers['textDocument/hover']
-  -- `false` to disable
-  hover = {
-
-    -- override default handler
-    handler = vim.lsp.handlers.hover,
-
-    -- see :h lsp-handlers
-    float = {
-      -- override border if desired
-      border = 'rounded',
-    },
-
-  },
-
-  -- settings for vim.lsp.handlers['textDocument/signatureHelp']
-  -- `false` to disable
-  signature_help = {
-
-    -- override default handler
-    handler = vim.lsp.handlers.signature_help,
-
-    -- see :h lsp-handlers
-    float = {
-      -- override border if desired
-      border = 'rounded',
-    },
-
-  },
-
-  -- lsp_signature settings
-  -- `false` to disable
-  lsp_signature = {
-    handler_opts = {
-      -- override border if desired
-      border = 'rounded',
-    },
-  },
+  border = 'rounded',
 
   -- rename popup settings
   rename = {
-    prompt = '> '
-  }
-
-  code_actions = {
+    prompt = '> ',
+    -- same as nui popup options
     popup_opts = {
       position = {
         row = 1,
@@ -155,7 +71,26 @@ You may override any of the settings below by passing a config object to `.setup
         padding = { 0, 1 },
       },
     },
-    min_width = {}
+  },
+
+  code_actions = {
+    min_width = {},
+    -- same as nui popup options
+    popup_opts = {
+      position = {
+        row = 1,
+        col = 0,
+      },
+      relative = 'cursor',
+      border = {
+        highlight = 'FloatBorder',
+        text = {
+          top = 'Code Actions',
+          top_align = 'center',
+        },
+        padding = { 0, 1 },
+      },
+    },
   }
 }
 ```
