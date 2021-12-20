@@ -16,7 +16,6 @@ Cosmic-UI is a simple wrapper around specific vim functionality. Built in order 
 
 - Rename floating popup & file change notification
 - Code Actions
-- Exports values such as the border value set in `.setup` to use elsewhere in your configuration
 
 ## 📷 Screenshots
 
@@ -61,14 +60,21 @@ You may override any of the settings below by passing a config object to `.setup
         row = 1,
         col = 0,
       },
+      size = {
+        width = 25,
+        height = 2,
+      },
       relative = 'cursor',
       border = {
         highlight = 'FloatBorder',
+        style = _G.CosmicUI_user_opts.border,
         text = {
-          top = 'Code Actions',
-          top_align = 'center',
+          top = ' Rename ',
+          top_align = 'left',
         },
-        padding = { 0, 1 },
+      },
+      win_options = {
+        winhighlight = 'Normal:Normal',
       },
     },
   },
@@ -116,13 +122,6 @@ map('n', 'gn', '<cmd>lua require("cosmic-ui").rename()<cr>')
 ```lua
 map('n', '<leader>ga', '<cmd>lua require("cosmic-ui").code_actions()<cr>')
 map('v', '<leader>ga', '<cmd>lua require("cosmic-ui").range_code_actions()<cr>')
-```
-
-#### Get border
-
-```lua
-local cosmic_ui = require('cosmic-ui')
-local border = cosmic_ui.get_border()
 ```
 
 _More coming soon..._
