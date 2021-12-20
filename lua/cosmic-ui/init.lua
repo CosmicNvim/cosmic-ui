@@ -39,8 +39,4 @@ M.range_code_actions = function(opts)
   M.code_actions(opts)
 end
 
-M.get_border = function()
-  return _G.CosmicUI_user_opts.border
-end
-
 return M
