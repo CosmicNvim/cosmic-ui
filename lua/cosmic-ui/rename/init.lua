@@ -49,8 +49,8 @@ local function rename(popup_opts, opts)
   input:mount()
 
   -- las value is length of highlight
-  vim.api.nvim_buf_add_highlight(input.bufnr, -1, 'LspRenamePrompt', 0, 0, #opts.prompt)
-  vim.cmd('hi link LspRenamePrompt Comment')
+  -- vim.api.nvim_buf_add_highlight(input.bufnr, -1, 'LspRenamePrompt', 0, 0, #opts.prompt)
+  -- vim.cmd('hi link LspRenamePrompt Comment')
 
   utils.default_mappings(input)
 
