@@ -47,7 +47,7 @@ You may override any of the settings below by passing a config object to `.setup
 {
   -- default border to use
   -- 'single', 'double', 'rounded', 'solid', 'shadow'
-  border = 'single',
+  border_style = 'single',
 
   -- rename popup settings
   rename = {
