@@ -1,7 +1,7 @@
 -- big shout out to telescope
 -- https://github.com/nvim-telescope/telescope.nvim/blob/master/lua/telescope/builtin/lsp.lua#L144
 local Menu = require('nui.menu')
-local NuiText = require('nui.text')
+local Text = require('nui.text')
 local event = require('nui.utils.autocmd').event
 local utils = require('cosmic-ui.utils')
 local M = {}
@@ -74,7 +74,7 @@ M.code_actions = function(opts)
     if response.result and not vim.tbl_isempty(response.result) then
       local client = vim.lsp.get_client_by_id(client_id)
 
-      table.insert(menu_items, Menu.separator(NuiText('(' .. client.name .. ')', 'Comment')))
+      table.insert(menu_items, Menu.separator(Text('(' .. client.name .. ')', 'Comment')))
 
       for _, result in pairs(response.result) do
         local command_title = result.title:gsub('\r\n', '\\r\\n'):gsub('\n', '\\n')
@@ -101,25 +101,23 @@ M.code_actions = function(opts)
     return
   end
 
-  local popup_opts = utils.merge({
+  local user_border = _G.CosmicUI_user_opts.code_actions.border
+  local popup_opts = {
     position = {
       row = 1,
       col = 0,
     },
     relative = 'cursor',
     border = {
-      highlight = 'FloatBorder',
-      style = _G.CosmicUI_user_opts.border,
+      highlight = user_border.highlight,
+      style = user_border.style or _G.CosmicUI_user_opts.border_style,
       text = {
-        top = NuiText('Code Actions'),
-        top_align = 'center',
+        top = Text(user_border.title, user_border.title_hl),
+        top_align = user_border.title_align,
       },
       padding = { 0, 1 },
     },
-    win_options = {
-      winhighlight = 'Normal:Normal',
-    },
-  }, _G.CosmicUI_user_opts.code_actions.popup_opts or {})
+  }
 
   local menu = Menu(popup_opts, {
     lines = menu_items,
@@ -136,7 +134,8 @@ M.code_actions = function(opts)
     },
     on_change = function(item, menu)
       local pos = utils.index_of(result_items, item)
-      menu.border:set_text('bottom', '(' .. tostring(pos) .. '/' .. #result_items .. ')', 'right')
+      local text = '(' .. tostring(pos) .. '/' .. #result_items .. ')'
+      menu.border:set_text('bottom', Text(text, user_border.bottom_hl), 'right')
     end,
     on_submit = function(item)
       local action = item.ctx.command

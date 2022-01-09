@@ -39,8 +39,6 @@ Cosmic-UI is a simple wrapper around specific vim functionality. Built in order 
   })
 ```
 
-<!-- This is because `Cosmic-UI` will initialize `lsp_signature.nvim`, which must be set up after LSP server in order to properly hook into the correct LSP handler. -->
-
 ## ⚙️ Configuration
 
 You may override any of the settings below by passing a config object to `.setup`
@@ -49,53 +47,30 @@ You may override any of the settings below by passing a config object to `.setup
 {
   -- default border to use
   -- 'single', 'double', 'rounded', 'solid', 'shadow'
-  border = 'rounded',
+  border = 'single',
 
   -- rename popup settings
   rename = {
-    prompt = '> ',
-    -- same as nui popup options
-    popup_opts = {
-      position = {
-        row = 1,
-        col = 0,
-      },
-      size = {
-        width = 25,
-        height = 2,
-      },
-      relative = 'cursor',
-      border = {
-        highlight = 'FloatBorder',
-        style = _G.CosmicUI_user_opts.border,
-        text = {
-          top = ' Rename ',
-          top_align = 'left',
-        },
-      },
-      win_options = {
-        winhighlight = 'Normal:Normal',
-      },
+    border = {
+      highlight = 'FloatBorder',
+      style = 'single',
+      title = ' Rename ',
+      title_align = 'left',
+      title_hl = 'FloatBorder',
     },
+    prompt = '> ',
+    prompt_hl = 'Comment',
   },
 
   code_actions = {
-    min_width = {},
-    -- same as nui popup options
-    popup_opts = {
-      position = {
-        row = 1,
-        col = 0,
-      },
-      relative = 'cursor',
-      border = {
-        highlight = 'FloatBorder',
-        text = {
-          top = 'Code Actions',
-          top_align = 'center',
-        },
-        padding = { 0, 1 },
-      },
+    min_width = nil,
+    border = {
+      bottom_hl = 'FloatBorder',
+      highlight = 'FloatBorder',
+      style = 'single',
+      title = 'Code Actions',
+      title_align = 'center',
+      title_hl = 'FloatBorder',
     },
   }
 }

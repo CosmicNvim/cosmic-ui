@@ -3,24 +3,36 @@ local M = {}
 
 local default_border = 'single'
 local default_user_opts = {
-  border = default_border,
+  border_style = default_border,
   rename = {
+    border = {
+      highlight = 'FloatBorder',
+      style = nil,
+      title = 'Rename',
+      title_align = 'left',
+      title_hl = 'FloatBorder',
+    },
     prompt = '> ',
-    popup_opts = {},
+    prompt_hl = 'Comment',
   },
   code_actions = {
-    popup_opts = {},
+    min_width = nil,
+    border = {
+      bottom_hl = 'FloatBorder',
+      highlight = 'FloatBorder',
+      style = nil,
+      title = 'Code Actions',
+      title_align = 'center',
+      title_hl = 'FloatBorder',
+    },
   },
 }
 
 _G.CosmicUI_user_opts = {}
 
 M.setup = function(user_opts)
-  -- get default opts with borders set from user config
-  local default_opts = utils.set_border(user_opts.border or default_border, default_user_opts)
-
   -- get parsed user opts
-  _G.CosmicUI_user_opts = utils.merge(default_opts, user_opts or {})
+  _G.CosmicUI_user_opts = utils.merge(default_user_opts, user_opts or {})
   user_opts = _G.CosmicUI_user_opts
 end
 
