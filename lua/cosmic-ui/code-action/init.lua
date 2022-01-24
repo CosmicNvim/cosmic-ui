@@ -4,6 +4,7 @@ local Menu = require('nui.menu')
 local Text = require('nui.text')
 local event = require('nui.utils.autocmd').event
 local utils = require('cosmic-ui.utils')
+local logger = utils.Logger
 local M = {}
 
 local function fix_zero_version(workspace_edit)
@@ -58,9 +59,7 @@ M.code_actions = function(opts)
   local results_lsp, _ = vim.lsp.buf_request_sync(0, 'textDocument/codeAction', opts.params, opts.timeout)
 
   if not results_lsp or vim.tbl_isempty(results_lsp) then
-    vim.notify('No results from textDocument/codeAction', vim.log.levels.WARN, {
-      title = 'CosmicUI',
-    })
+    logger:warn('No results from textDocument/codeAction')
     return
   end
 
@@ -95,9 +94,7 @@ M.code_actions = function(opts)
   end
 
   if #menu_items == 0 then
-    vim.notify('No code actions available', vim.log.levels.INFO, {
-      title = 'CosmicUI',
-    })
+    logger:log('No code actions available')
     return
   end
 
@@ -149,7 +146,7 @@ M.code_actions = function(opts)
       then
         client.request('codeAction/resolve', action, function(resolved_err, resolved_action)
           if resolved_err then
-            vim.notify(resolved_err.code .. ': ' .. resolved_err.message, vim.log.levels.ERROR)
+            logger:error(resolved_err.code .. ': ' .. resolved_err.message)
             return
           end
           if resolved_action then

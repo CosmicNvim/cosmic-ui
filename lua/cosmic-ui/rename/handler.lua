@@ -1,3 +1,5 @@
+local logger = require('cosmic-ui.utils').Logger
+
 return function(...)
   local utils = require('cosmic-ui.utils')
   local result
@@ -13,9 +15,7 @@ return function(...)
   end
 
   if err then
-    vim.notify(("Error running LSP query '%s': %s"):format(method, err), vim.log.levels.ERROR, {
-      title = 'Cosmic-UI',
-    })
+    logger:error(("Error running LSP query '%s': %s"):format(method, err))
     return
   end
 
@@ -27,7 +27,7 @@ return function(...)
       table.insert(msg, ('%d changes -> %s'):format(#c, utils.get_relative_path(f)))
     end
     local currName = vim.fn.expand('<cword>')
-    vim.notify(msg, vim.log.levels.INFO, { title = ('Rename: %s -> %s'):format(currName, new_word) })
+    logger:log(msg, { title = ('Rename: %s -> %s'):format(currName, new_word) })
   end
 
   vim.lsp.handlers[method](...)

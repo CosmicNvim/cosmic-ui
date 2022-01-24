@@ -3,6 +3,7 @@ local M = {}
 
 local default_border = 'single'
 local default_user_opts = {
+  notify_title = 'CosmicUI',
   border_style = default_border,
   rename = {
     border = {

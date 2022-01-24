@@ -68,4 +68,44 @@ M.set_border = function(border, tbl)
   return tbl
 end
 
+M.Logger = {}
+M.Logger.__index = M.Logger
+
+local function log(type, msg, opts)
+  local title = _G.CosmicUI_user_opts.notify_title
+  local ok, notify = pcall(require, 'notify')
+  if ok then
+    notify(
+      msg,
+      type,
+      M.merge({
+        title = title,
+      }, opts)
+    )
+  else
+    if vim.tbl_islist(msg) then
+      -- regular vim.notify can't take tables of strings
+      local tmp_list = msg
+      msg = ''
+      for _, v in pairs(tmp_list) do
+        msg = msg .. v
+      end
+    end
+
+    vim.notify(msg, type)
+  end
+end
+
+function M.Logger:log(msg, opts)
+  log(vim.log.levels.INFO, msg, opts or {})
+end
+
+function M.Logger:warn(msg, opts)
+  log(vim.log.levels.WARN, msg, opts or {})
+end
+
+function M.Logger:error(msg, opts)
+  log(vim.log.levels.ERROR, msg, opts or {})
+end
+
 return M
