@@ -141,8 +141,8 @@ M.code_actions = function(opts)
       if
         not action.edit
         and client
-        and type(client.resolved_capabilities.code_action) == 'table'
-        and client.resolved_capabilities.code_action.resolveProvider
+        and type(client.server_capabilities.codeAction) == 'table'
+        and client.server_capabilities.codeAction.resolveProvider
       then
         client.request('codeAction/resolve', action, function(resolved_err, resolved_action)
           if resolved_err then
