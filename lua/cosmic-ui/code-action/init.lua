@@ -36,7 +36,7 @@ end
 local function execute_action(action)
   if action.edit or type(action.command) == 'table' then
     if action.edit then
-      vim.lsp.util.apply_workspace_edit(action.edit)
+      vim.lsp.util.apply_workspace_edit(action.edit, 'utf-8')
     end
     if type(action.command) == 'table' then
       vim.lsp.buf.execute_command(action.command)
