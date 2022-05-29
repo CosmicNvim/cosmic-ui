@@ -27,6 +27,10 @@ local default_user_opts = {
       title_hl = 'FloatBorder',
     },
   },
+  winbar = {
+    update_on_save = false,
+    msg = '%f',
+  },
 }
 
 _G.CosmicUI_user_opts = {}
@@ -34,7 +38,10 @@ _G.CosmicUI_user_opts = {}
 M.setup = function(user_opts)
   -- get parsed user opts
   _G.CosmicUI_user_opts = utils.merge(default_user_opts, user_opts or {})
-  user_opts = _G.CosmicUI_user_opts
+
+  if _G.CosmicUI_user_opts.winbar then
+    require('cosmic-ui.winbar')
+  end
 end
 
 M.rename = function(popup_opts, opts)
