@@ -28,7 +28,6 @@ local default_user_opts = {
     },
   },
   winbar = {
-    update_on_save = false,
     msg = '%f',
   },
 }
