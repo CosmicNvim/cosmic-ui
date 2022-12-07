@@ -10,10 +10,10 @@ local function rename(popup_opts, opts)
 
   local user_border = _G.CosmicUI_user_opts.rename.border
   local width = 25
-  if #curr_name + 3 > width then
-    -- consider border (+2) and one free space, otherwise the textbox scrolls
+  if #curr_name + #_G.CosmicUI_user_opts.rename.prompt >= width then
+    -- consider prompt and one free space, otherwise the textbox scrolls
     -- and shows an -- seemingly -- empty textbox
-    width = #curr_name + 3
+    width = #curr_name + #_G.CosmicUI_user_opts.rename.prompt + 1
   end
 
   popup_opts = utils.merge({
