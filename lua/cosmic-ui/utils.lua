@@ -73,27 +73,21 @@ M.Logger.__index = M.Logger
 
 local function log(type, msg, opts)
   local title = _G.CosmicUI_user_opts.notify_title
-  local ok, notify = pcall(require, 'notify')
-  if ok then
-    notify(
-      msg,
-      type,
-      M.merge({
-        title = title,
-      }, opts)
-    )
-  else
-    if vim.tbl_islist(msg) then
-      -- regular vim.notify can't take tables of strings
-      local tmp_list = msg
-      msg = ''
-      for _, v in pairs(tmp_list) do
-        msg = msg .. v
+  if vim.islist(msg) then
+    -- regular vim.notify can't take tables of strings
+    local tmp_list = msg
+    msg = ''
+    for k, v in pairs(tmp_list) do
+      msg = msg .. v
+      if k < #tmp_list then
+        msg = msg .. '\n'
       end
     end
-
-    vim.notify(msg, type)
   end
+
+  vim.notify(msg, type, {
+    title = opts.title or title,
+  })
 end
 
 function M.Logger:log(msg, opts)
