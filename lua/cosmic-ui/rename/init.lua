@@ -8,6 +8,12 @@ local function rename(popup_opts, opts)
   local event = require('nui.utils.autocmd').event
   local curr_name = vim.fn.expand('<cword>')
 
+  local clients = vim.lsp.get_clients({ bufnr = 0, method = 'textDocument/rename' })
+  if #clients == 0 then
+    utils.Logger:warn('No LSP clients with rename attached')
+    return
+  end
+
   local user_border = _G.CosmicUI_user_opts.rename.border
   local width = 25
   if #curr_name + #_G.CosmicUI_user_opts.rename.prompt >= width then
@@ -28,7 +34,7 @@ local function rename(popup_opts, opts)
     relative = 'cursor',
     border = {
       highlight = user_border.highlight,
-      style = user_border.style or _G.CosmicUI_user_opts.border_style,
+      style = user_border.style or vim.o.winborder,
       text = {
         top = Text(user_border.title, user_border.title_hl),
         top_align = user_border.title_align,
@@ -43,9 +49,11 @@ local function rename(popup_opts, opts)
       if not (new_name and #new_name > 0) or new_name == curr_name then
         return
       end
-      local params = lsp.util.make_position_params()
-      params.newName = new_name
-      lsp.buf_request(0, 'textDocument/rename', params, rename_handler)
+      for _, client in ipairs(clients) do
+        local params = lsp.util.make_position_params(0, client.offset_encoding)
+        params.newName = new_name
+        client:request('textDocument/rename', params, rename_handler, 0)
+      end
     end,
   }, opts or {})
 

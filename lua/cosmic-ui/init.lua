@@ -1,14 +1,11 @@
 local utils = require('cosmic-ui.utils')
 local M = {}
 
-local default_border = 'single'
 local default_user_opts = {
   notify_title = 'CosmicUI',
-  border_style = default_border,
   rename = {
     border = {
       highlight = 'FloatBorder',
-      style = nil,
       title = 'Rename',
       title_align = 'left',
       title_hl = 'FloatBorder',
@@ -21,7 +18,6 @@ local default_user_opts = {
     border = {
       bottom_hl = 'FloatBorder',
       highlight = 'FloatBorder',
-      style = nil,
       title = 'Code Actions',
       title_align = 'center',
       title_hl = 'FloatBorder',
@@ -46,8 +42,14 @@ M.code_actions = function(opts)
 end
 
 M.range_code_actions = function(opts)
+  local bufnr = 0
+  local start_pos = vim.api.nvim_buf_get_mark(bufnr, '<')
+  local end_pos = vim.api.nvim_buf_get_mark(bufnr, '>')
   opts = utils.merge({
-    params = vim.lsp.util.make_given_range_params(),
+    range = {
+      start = { start_pos[1], start_pos[2] },
+      ['end'] = { end_pos[1], end_pos[2] },
+    },
   }, opts or {})
   M.code_actions(opts)
 end

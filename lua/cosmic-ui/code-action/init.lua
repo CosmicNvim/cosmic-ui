@@ -33,145 +33,219 @@ local function transform_action(action)
   return action
 end
 
-local function execute_action(action)
+local function execute_action(action, client)
   if action.edit or type(action.command) == 'table' then
     if action.edit then
-      vim.lsp.util.apply_workspace_edit(action.edit, 'utf-8')
+      vim.lsp.util.apply_workspace_edit(action.edit, client.offset_encoding)
     end
     if type(action.command) == 'table' then
-      vim.lsp.buf.execute_command(action.command)
+      client:exec_cmd(action.command)
     end
   else
-    vim.lsp.buf.execute_command(action)
+    client:exec_cmd(action)
   end
 end
 
+local function supports_code_action_resolve(client)
+  if not client then
+    return false
+  end
+
+  if type(client.supports_method) == 'function' and client:supports_method('codeAction/resolve') then
+    return true
+  end
+
+  local server_capabilities = client.server_capabilities or {}
+  local code_action_provider = server_capabilities.codeActionProvider or server_capabilities.codeAction
+
+  return type(code_action_provider) == 'table'
+    and (code_action_provider.resolveProvider or code_action_provider.resolve_provider)
+end
+
+local function code_action_diagnostics(client_id, bufnr, lnum)
+  local diagnostics = {}
+  local ns_push = vim.lsp.diagnostic.get_namespace(client_id, false)
+  local ns_pull = vim.lsp.diagnostic.get_namespace(client_id, true)
+
+  vim.list_extend(diagnostics, vim.diagnostic.get(bufnr, { namespace = ns_pull, lnum = lnum }))
+  vim.list_extend(diagnostics, vim.diagnostic.get(bufnr, { namespace = ns_push, lnum = lnum }))
+
+  local lsp_diagnostics = {}
+  for _, diagnostic in ipairs(diagnostics) do
+    local lsp_diagnostic = diagnostic.user_data and diagnostic.user_data.lsp
+    if lsp_diagnostic then
+      table.insert(lsp_diagnostics, lsp_diagnostic)
+    end
+  end
+
+  return lsp_diagnostics
+end
+
 M.code_actions = function(opts)
-  opts = utils.merge({
-    timeout = 2000,
-    params = vim.lsp.util.make_range_params(),
-  }, opts or {})
-
-  opts.params.context = {
-    diagnostics = vim.lsp.diagnostic.get_line_diagnostics(),
-  }
-
-  local results_lsp, _ = vim.lsp.buf_request_sync(0, 'textDocument/codeAction', opts.params, opts.timeout)
-
-  if not results_lsp or vim.tbl_isempty(results_lsp) then
-    logger:warn('No results from textDocument/codeAction')
+  local bufnr = 0
+  local clients = vim.lsp.get_clients({ bufnr = bufnr, method = 'textDocument/codeAction' })
+  if #clients == 0 then
+    logger:warn('No LSP clients with code actions attached')
     return
   end
 
-  -- items for menu
-  local menu_items = {}
-  -- result items to filter through
-  local result_items = {}
-  local min_width = 0
+  opts = utils.merge({ params = nil, range = nil }, opts or {})
+  local lnum = vim.api.nvim_win_get_cursor(0)[1] - 1
+  local pending = #clients
+  local results_lsp = {}
 
-  for client_id, response in pairs(results_lsp) do
-    if response.result and not vim.tbl_isempty(response.result) then
-      local client = vim.lsp.get_client_by_id(client_id)
+  local function on_result(client)
+    return function(err, result)
+      results_lsp[client.id] = {
+        error = err,
+        result = result,
+        client = client,
+      }
 
-      table.insert(menu_items, Menu.separator(Text('(' .. client.name .. ')', 'Comment')))
+      pending = pending - 1
+      if pending > 0 then
+        return
+      end
 
-      for _, result in pairs(response.result) do
-        local command_title = result.title:gsub('\r\n', '\\r\\n'):gsub('\n', '\\n')
+    if not results_lsp or next(results_lsp) == nil then
+      logger:warn('No results from textDocument/codeAction')
+      return
+    end
 
-        local item = Menu.item(command_title)
-        item.ctx = {
-          command_title = command_title,
-          client = client,
-          client_name = client and client.name or '',
-          command = result,
-        }
+    -- items for menu
+    local menu_items = {}
+    -- result items to filter through
+    local result_items = {}
+    local min_width = 0
 
-        min_width = math.max(min_width, #command_title, 30)
-        table.insert(menu_items, item)
-        table.insert(result_items, item)
+    for _, response in pairs(results_lsp) do
+      if response.result and next(response.result) ~= nil then
+        local client = response.client
+
+        -- Client can detach between request and UI render.
+        if client and client.name then
+          table.insert(menu_items, Menu.separator(Text('(' .. client.name .. ')', 'Comment')))
+
+          for _, result in pairs(response.result) do
+            local command_title = result.title:gsub('\r\n', '\\r\\n'):gsub('\n', '\\n')
+
+            local item = Menu.item(command_title)
+            item.ctx = {
+              command_title = command_title,
+              client = client,
+              client_name = client and client.name or '',
+              command = result,
+            }
+
+            min_width = math.max(min_width, #command_title, 30)
+            table.insert(menu_items, item)
+            table.insert(result_items, item)
+          end
+        end
       end
     end
-  end
 
-  if #menu_items == 0 then
-    logger:log('No code actions available')
-    return
-  end
+    if #menu_items == 0 then
+      logger:log('No code actions available')
+      return
+    end
 
-  local user_border = _G.CosmicUI_user_opts.code_actions.border
-  local popup_opts = {
-    position = {
-      row = 1,
-      col = 0,
-    },
-    relative = 'cursor',
-    border = {
-      highlight = user_border.highlight,
-      style = user_border.style or _G.CosmicUI_user_opts.border_style,
-      text = {
-        top = Text(user_border.title, user_border.title_hl),
-        top_align = user_border.title_align,
+    local user_border = _G.CosmicUI_user_opts.code_actions.border
+    local popup_opts = {
+      position = {
+        row = 1,
+        col = 0,
       },
-      padding = { 0, 1 },
-    },
-  }
+      relative = 'cursor',
+      border = {
+        highlight = user_border.highlight,
+        style = user_border.style or vim.o.winborder,
+        text = {
+          top = Text(user_border.title, user_border.title_hl),
+          top_align = user_border.title_align,
+        },
+        padding = { 0, 1 },
+      },
+    }
 
-  local menu = Menu(popup_opts, {
-    lines = menu_items,
-    min_width = _G.CosmicUI_user_opts.code_actions.min_width or min_width,
-    separator = {
-      char = ' ',
-      text_align = 'center',
-    },
-    keymap = {
-      focus_next = { 'j', '<Down>', '<Tab>' },
-      focus_prev = { 'k', '<Up>', '<S-Tab>' },
-      close = { '<Esc>', '<C-c>' },
-      submit = { '<CR>', '<Space>' },
-    },
-    on_change = function(item, menu)
-      local pos = utils.index_of(result_items, item)
-      local text = '(' .. tostring(pos) .. '/' .. #result_items .. ')'
-      menu.border:set_text('bottom', Text(text, user_border.bottom_hl), 'right')
-    end,
-    on_submit = function(item)
-      local action = item.ctx.command
-      local client = item.ctx.client
+    local menu = Menu(popup_opts, {
+      lines = menu_items,
+      min_width = _G.CosmicUI_user_opts.code_actions.min_width or min_width,
+      separator = {
+        char = ' ',
+        text_align = 'center',
+      },
+      keymap = {
+        focus_next = { 'j', '<Down>', '<Tab>' },
+        focus_prev = { 'k', '<Up>', '<S-Tab>' },
+        close = { '<Esc>', '<C-c>' },
+        submit = { '<CR>', '<Space>' },
+      },
+      on_change = function(item, menu)
+        local pos = utils.index_of(result_items, item)
+        local text = '(' .. tostring(pos) .. '/' .. #result_items .. ')'
+        menu.border:set_text('bottom', Text(text, user_border.bottom_hl), 'right')
+      end,
+      on_submit = function(item)
+        local action = item.ctx.command
+        local client = item.ctx.client
 
-      if
-        not action.edit
-        and client
-        and type(client.server_capabilities.codeAction) == 'table'
-        and client.server_capabilities.codeAction.resolveProvider
-      then
-        client.request('codeAction/resolve', action, function(resolved_err, resolved_action)
-          if resolved_err then
-            logger:error(resolved_err.code .. ': ' .. resolved_err.message)
-            return
-          end
-          if resolved_action then
-            execute_action(transform_action(resolved_action))
-          else
-            execute_action(transform_action(action))
-          end
-        end)
-      else
-        execute_action(transform_action(action))
+        if not client then
+          logger:warn('Code action client is no longer available')
+          return
+        end
+
+        if not action.edit and supports_code_action_resolve(client) then
+          client:request('codeAction/resolve', action, function(resolved_err, resolved_action)
+            if resolved_err then
+              logger:error(resolved_err.code .. ': ' .. resolved_err.message)
+              return
+            end
+            if resolved_action then
+              execute_action(transform_action(resolved_action), client)
+            else
+              execute_action(transform_action(action), client)
+            end
+          end)
+        else
+          execute_action(transform_action(action), client)
+        end
+      end,
+    })
+
+    -- mount the component
+    menu:mount()
+
+    vim.api.nvim_buf_call(menu.bufnr, function()
+      if vim.fn.mode() ~= 'n' then
+        vim.api.nvim_input('<Esc>')
       end
-    end,
-  })
+    end)
 
-  -- mount the component
-  menu:mount()
-
-  vim.api.nvim_buf_call(menu.bufnr, function()
-    if vim.fn.mode() ~= 'n' then
-      vim.api.nvim_input('<Esc>')
+    -- close menu when cursor leaves buffer
+    menu:on(event.BufLeave, menu.menu_props.on_close, { once = true })
     end
-  end)
+  end
 
-  -- close menu when cursor leaves buffer
-  menu:on(event.BufLeave, menu.menu_props.on_close, { once = true })
+  for _, client in ipairs(clients) do
+    local params
+    if opts.range and opts.range.start and opts.range['end'] then
+      params = vim.lsp.util.make_given_range_params(opts.range.start, opts.range['end'], bufnr, client.offset_encoding)
+    elseif opts.params then
+      params = vim.deepcopy(opts.params)
+    else
+      params = vim.lsp.util.make_range_params(0, client.offset_encoding)
+    end
+
+    local context = vim.deepcopy(params.context or {})
+
+    if not context.diagnostics then
+      context.diagnostics = code_action_diagnostics(client.id, bufnr, lnum)
+    end
+
+    params.context = context
+    client:request('textDocument/codeAction', params, on_result(client), bufnr)
+  end
 end
 
 return M

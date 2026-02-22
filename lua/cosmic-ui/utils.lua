@@ -54,20 +54,6 @@ M.default_mappings = function(input)
   end)
 end
 
-M.set_border = function(border, tbl)
-  for k, v in pairs(tbl) do
-    if k == 'border' then
-      tbl[k] = border
-    end
-
-    if type(v) == 'table' then
-      tbl[k] = M.set_border(border, v)
-    end
-  end
-
-  return tbl
-end
-
 M.Logger = {}
 M.Logger.__index = M.Logger
 
