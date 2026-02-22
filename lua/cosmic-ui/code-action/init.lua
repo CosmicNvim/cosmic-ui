@@ -33,32 +33,38 @@ local function transform_action(action)
   return action
 end
 
-local function execute_action(action)
+local function execute_action(action, client)
   if action.edit or type(action.command) == 'table' then
     if action.edit then
-      vim.lsp.util.apply_workspace_edit(action.edit, 'utf-8')
+      vim.lsp.util.apply_workspace_edit(action.edit, client.offset_encoding)
     end
     if type(action.command) == 'table' then
-      vim.lsp.buf.execute_command(action.command)
+      client:exec_cmd(action.command)
     end
   else
-    vim.lsp.buf.execute_command(action)
+    client:exec_cmd(action)
   end
 end
 
 M.code_actions = function(opts)
+  local clients = vim.lsp.get_clients({ bufnr = 0 })
+  if #clients == 0 then
+    logger:warn('No LSP clients attached')
+    return
+  end
+
   opts = utils.merge({
     timeout = 2000,
-    params = vim.lsp.util.make_range_params(),
+    params = vim.lsp.util.make_range_params(0, clients[1].offset_encoding),
   }, opts or {})
 
   opts.params.context = {
-    diagnostics = vim.lsp.diagnostic.get_line_diagnostics(),
+    diagnostics = vim.diagnostic.get(0, { lnum = vim.api.nvim_win_get_cursor(0)[1] - 1 }),
   }
 
   local results_lsp, _ = vim.lsp.buf_request_sync(0, 'textDocument/codeAction', opts.params, opts.timeout)
 
-  if not results_lsp or vim.tbl_isempty(results_lsp) then
+  if not results_lsp or next(results_lsp) == nil then
     logger:warn('No results from textDocument/codeAction')
     return
   end
@@ -70,7 +76,7 @@ M.code_actions = function(opts)
   local min_width = 0
 
   for client_id, response in pairs(results_lsp) do
-    if response.result and not vim.tbl_isempty(response.result) then
+    if response.result and next(response.result) ~= nil then
       local client = vim.lsp.get_client_by_id(client_id)
 
       table.insert(menu_items, Menu.separator(Text('(' .. client.name .. ')', 'Comment')))
@@ -144,19 +150,19 @@ M.code_actions = function(opts)
         and type(client.server_capabilities.codeAction) == 'table'
         and client.server_capabilities.codeAction.resolveProvider
       then
-        client.request('codeAction/resolve', action, function(resolved_err, resolved_action)
+        client:request('codeAction/resolve', action, function(resolved_err, resolved_action)
           if resolved_err then
             logger:error(resolved_err.code .. ': ' .. resolved_err.message)
             return
           end
           if resolved_action then
-            execute_action(transform_action(resolved_action))
+            execute_action(transform_action(resolved_action), client)
           else
-            execute_action(transform_action(action))
+            execute_action(transform_action(action), client)
           end
         end)
       else
-        execute_action(transform_action(action))
+        execute_action(transform_action(action), client)
       end
     end,
   })

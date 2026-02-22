@@ -46,8 +46,10 @@ M.code_actions = function(opts)
 end
 
 M.range_code_actions = function(opts)
+  local clients = vim.lsp.get_clients({ bufnr = 0 })
+  local offset_encoding = clients[1] and clients[1].offset_encoding or 'utf-16'
   opts = utils.merge({
-    params = vim.lsp.util.make_given_range_params(),
+    params = vim.lsp.util.make_given_range_params(nil, nil, 0, offset_encoding),
   }, opts or {})
   M.code_actions(opts)
 end
