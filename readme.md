@@ -94,7 +94,26 @@ Notes:
 - Unknown setup keys are ignored with a warning.
 - `code_actions` is not a supported key; use `codeactions`.
 
+## 📚 Module Docs
+
+### Feature modules
+
+- `rename`: Cursor-local rename input that dispatches LSP rename requests.  
+  Docs: [`docs/features.md#rename`](docs/features.md#rename)
+- `codeactions`: Aggregates LSP code actions for cursor/range and executes the selected action.  
+  Docs: [`docs/features.md#codeactions`](docs/features.md#codeactions)
+- `formatters`: Toggle and run Conform/LSP formatting with buffer/global scope control and per-item overrides.  
+  Docs: [`docs/features.md#formatters`](docs/features.md#formatters)
+
+### Core modules
+
+- `cosmic-ui` root module (setup + lazy feature loading): [`docs/cosmic-ui.md`](docs/cosmic-ui.md)
+- `config` (merged options + setup/module gating): [`docs/config.md`](docs/config.md)
+- `utils` (shared helpers + logger): [`docs/utils.md`](docs/utils.md)
+
 ## ✨ Usage
+
+### Setup
 
 ```lua
 local CosmicUI = require("cosmic-ui")
@@ -106,79 +125,44 @@ CosmicUI.setup({
 })
 ```
 
-#### Rename
+### Rename
 
 ```lua
 vim.keymap.set("n", "gn", function()
   require("cosmic-ui").rename.open()
-end, { silent = true })
+end, { silent = true, desc = "Rename" })
 ```
 
-#### Code Actions
+### Codeactions
 
 ```lua
 vim.keymap.set("n", "<leader>ga", function()
   require("cosmic-ui").codeactions.open()
-end, { silent = true })
+end, { silent = true, desc = "Code actions" })
 
 vim.keymap.set("v", "<leader>ga", function()
   require("cosmic-ui").codeactions.range()
-end, { silent = true })
+end, { silent = true, desc = "Range code actions" })
 ```
 
-#### Formatters
+### Formatters
 
 ```lua
 vim.keymap.set("n", "<leader>gf", function()
   require("cosmic-ui").formatters.open()
-end, { silent = true })
+end, { silent = true, desc = "Toggle formatters (buffer)" })
 
 vim.keymap.set("n", "<leader>gF", function()
   require("cosmic-ui").formatters.open({ scope = "global" })
-end, { silent = true })
+end, { silent = true, desc = "Toggle formatters (global)" })
 
 vim.keymap.set("n", "<leader>fm", function()
   require("cosmic-ui").formatters.format()
-end, { silent = true })
-
-vim.keymap.set("n", "<leader>fM", function()
-  require("cosmic-ui").formatters.format_async()
-end, { silent = true })
+end, { silent = true, desc = "Format buffer" })
 ```
 
-`formatters.open()` uses a native Neovim floating window and requires `nvim-web-devicons`.
+More usage examples:
 
-- Default scope is `buffer` unless you pass `{ scope = "global" }`.
-- `<Tab>` toggles the selected formatter row.
-- `s` switches scope on the fly.
-- `a` toggles all visible formatter rows in the active scope.
-- `r` resets the active scope.
-- `f` formats then closes the window.
-- `<CR>`, `<Esc>`, and `q` close the window.
-- Conform formatter rows come from `conform.list_formatters_to_run()`.
-- Conform is optional; if not installed, the Conform section shows as unavailable.
-- Row states use icons: `` enabled, `󰄱` disabled, `` unavailable.
-- UI colors are semantic and theme-linked (header, sections, key hints, and row states).
-
-Per-item APIs:
-
-```lua
-require("cosmic-ui").formatters.toggle_item({
-  source = "lsp", -- "lsp" or "conform"
-  name = "lua_ls",
-  scope = "buffer", -- default
-})
-
-require("cosmic-ui").formatters.disable_item({
-  source = "conform",
-  name = "stylua",
-  scope = "global",
-})
-```
-
-LSP row states:
-- `ON`: formatter gate is enabled and at least one LSP client can format.
-- `OFF`: formatter gate is disabled.
-- `UNAVAILABLE`: gate is enabled, but attached clients are disabled for formatting or do not support formatting.
-
-_More coming soon..._
+- Rename: [`docs/features.md#rename`](docs/features.md#rename)
+- Codeactions: [`docs/features.md#codeactions`](docs/features.md#codeactions)
+- Formatters: [`docs/features.md#formatters`](docs/features.md#formatters)
