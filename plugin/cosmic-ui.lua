@@ -8,3 +8,4 @@ if vim.g.loaded_cosmic_ui then
 end
 
 vim.g.loaded_cosmic_ui = 1
+_G.CosmicUI = require('cosmic-ui')

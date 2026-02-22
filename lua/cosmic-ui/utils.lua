@@ -1,4 +1,5 @@
 local M = {}
+local config = require('cosmic-ui.config')
 
 M.merge = function(...)
   return vim.tbl_deep_extend('force', ...)
@@ -58,7 +59,8 @@ M.Logger = {}
 M.Logger.__index = M.Logger
 
 local function log(type, msg, opts)
-  local title = _G.CosmicUI_user_opts.notify_title
+  local global_opts = config.get() or {}
+  local title = global_opts.notify_title or 'CosmicUI'
   if vim.islist(msg) then
     -- regular vim.notify can't take tables of strings
     local tmp_list = msg

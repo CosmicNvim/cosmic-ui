@@ -1,5 +1,6 @@
 local lsp = vim.lsp
 local utils = require('cosmic-ui.utils')
+local config = require('cosmic-ui.config')
 local rename_handler = require('cosmic-ui.rename.handler')
 local Text = require('nui.text')
 
@@ -14,12 +15,13 @@ local function rename(popup_opts, opts)
     return
   end
 
-  local user_border = _G.CosmicUI_user_opts.rename.border
+  local user_opts = config.module_opts('rename') or {}
+  local user_border = user_opts.border or {}
   local width = 25
-  if #curr_name + #_G.CosmicUI_user_opts.rename.prompt >= width then
+  if #curr_name + #(user_opts.prompt or '> ') >= width then
     -- consider prompt and one free space, otherwise the textbox scrolls
     -- and shows an -- seemingly -- empty textbox
-    width = #curr_name + #_G.CosmicUI_user_opts.rename.prompt + 1
+    width = #curr_name + #(user_opts.prompt or '> ') + 1
   end
 
   popup_opts = utils.merge({
@@ -43,7 +45,7 @@ local function rename(popup_opts, opts)
   }, popup_opts or {})
 
   opts = utils.merge({
-    prompt = Text(_G.CosmicUI_user_opts.rename.prompt, _G.CosmicUI_user_opts.rename.prompt_hl),
+    prompt = Text(user_opts.prompt or '> ', user_opts.prompt_hl or 'Comment'),
     default_value = curr_name,
     on_submit = function(new_name)
       if not (new_name and #new_name > 0) or new_name == curr_name then
