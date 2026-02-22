@@ -38,6 +38,8 @@ local highlight_links = {
   CosmicUiFmtTitle = 'Title',
   CosmicUiFmtHeader = 'Identifier',
   CosmicUiFmtSection = 'Type',
+  CosmicUiFmtCursorLine = 'CursorLine',
+  CosmicUiFmtCursor = 'Cursor',
   CosmicUiFmtHintKey = 'Special',
   CosmicUiFmtHintText = 'Comment',
   CosmicUiFmtEnabled = 'String',
@@ -831,6 +833,12 @@ local function close_ui()
     return
   end
 
+  if ui.cursor_overridden and ui.prev_guicursor then
+    pcall(function()
+      vim.o.guicursor = ui.prev_guicursor
+    end)
+  end
+
   state.ui = nil
 
   if ui.augroup then
@@ -915,8 +923,34 @@ local function ensure_ui_highlights()
   end
 
   for name, link in pairs(highlight_links) do
-    vim.api.nvim_set_hl(0, name, { link = link, default = true })
+    if name ~= 'CosmicUiFmtCursorLine' then
+      vim.api.nvim_set_hl(0, name, { link = link, default = true })
+    end
   end
+
+  local function group_bg(name)
+    local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = name, link = false })
+    if not ok or type(hl) ~= 'table' then
+      return nil
+    end
+    return hl.bg
+  end
+
+  local bg = group_bg('CursorLine') or group_bg('Visual') or group_bg('PmenuSel')
+  if not bg then
+    bg = vim.o.background == 'light' and 0xEAEAEA or 0x2A2A2A
+  end
+
+  vim.api.nvim_set_hl(0, 'CosmicUiFmtCursorLine', {
+    bg = bg,
+    nocombine = true,
+  })
+
+  vim.api.nvim_set_hl(0, 'CosmicUiFmtCursor', {
+    fg = bg,
+    bg = bg,
+    nocombine = true,
+  })
 end
 
 local function find_token(line, token, init)
@@ -1110,6 +1144,11 @@ local function apply_ui_highlights(ui, lines)
 
   vim.api.nvim_buf_clear_namespace(ui.buf, state.ui_ns, 0, -1)
 
+  if ui.selected and ui.rows and ui.rows[ui.selected] then
+    local selected_row = ui.rows[ui.selected]
+    add_hl(ui.buf, selected_row.lnum - 1, 'CosmicUiFmtCursorLine', 0, -1)
+  end
+
   local header_lnum = ui.header_lnum
   if header_lnum and lines[header_lnum] then
     add_hl(ui.buf, header_lnum - 1, 'CosmicUiFmtHeader', 0, -1)
@@ -1231,6 +1270,14 @@ local function render_ui(ui)
   local height = #lines
   width, height = clamp_ui_size(width, height)
 
+  -- Pad each line so row highlights can span the full window width.
+  for i, line in ipairs(lines) do
+    local display = vim.fn.strdisplaywidth(line)
+    if display < width then
+      lines[i] = line .. string.rep(' ', width - display)
+    end
+  end
+
   local row = math.max(1, math.floor(((vim.o.lines - vim.o.cmdheight) - height) / 2))
   local col = math.max(0, math.floor((vim.o.columns - width) / 2))
 
@@ -1239,7 +1286,7 @@ local function render_ui(ui)
     relative = 'editor',
     style = 'minimal',
     border = border,
-    title = ' CosmicNvim Format ',
+    title = 'Toggle Formatters',
     title_pos = 'center',
     row = row,
     col = col,
@@ -1269,7 +1316,7 @@ local function move_selection(ui, delta)
   local next_idx = next_toggleable_index(ui.rows, start, delta)
   if next_idx then
     ui.selected = next_idx
-    set_cursor_to_selected(ui)
+    render_ui(ui)
   end
 end
 
@@ -1415,7 +1462,7 @@ M.open = function(opts)
     relative = 'editor',
     style = 'minimal',
     border = border,
-    title = ' CosmicNvim Format ',
+    title = 'Toggle Formatters',
     title_pos = 'center',
     row = 2,
     col = 4,
@@ -1428,11 +1475,13 @@ M.open = function(opts)
   end
 
   vim.wo[win].cursorline = true
+  vim.wo[win].cursorlineopt = 'line'
   vim.wo[win].number = false
   vim.wo[win].relativenumber = false
   vim.wo[win].signcolumn = 'no'
   vim.wo[win].wrap = false
-  vim.wo[win].winhl = 'FloatTitle:CosmicUiFmtTitle,FloatBorder:CosmicUiFmtSection'
+  vim.wo[win].winhl =
+    'FloatTitle:CosmicUiFmtTitle,FloatBorder:CosmicUiFmtSection,CursorLine:CosmicUiFmtCursorLine,Cursor:CosmicUiFmtCursor'
 
   local ui = {
     scope = scope,
@@ -1441,7 +1490,18 @@ M.open = function(opts)
     win = win,
     selected = nil,
     rows = {},
+    prev_guicursor = vim.o.guicursor,
+    cursor_overridden = false,
   }
+
+  pcall(function()
+    local base = ui.prev_guicursor
+    if base == '' then
+      base = 'a:block'
+    end
+    vim.o.guicursor = base .. ',a:blinkon0-CosmicUiFmtCursor/CosmicUiFmtCursor'
+    ui.cursor_overridden = true
+  end)
 
   ui.augroup = vim.api.nvim_create_augroup('cosmic_ui_formatters_' .. tostring(buf), { clear = true })
   vim.api.nvim_create_autocmd({ 'BufLeave', 'WinLeave' }, {
