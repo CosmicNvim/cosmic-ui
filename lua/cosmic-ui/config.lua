@@ -22,12 +22,14 @@ local defaults = {
       title_hl = 'FloatBorder',
     },
   },
+  formatters = {},
 }
 
 local known_top_level_keys = {
   notify_title = true,
   rename = true,
   codeactions = true,
+  formatters = true,
 }
 
 local state = {
@@ -73,6 +75,7 @@ M.setup = function(user_opts)
   for module_name, module_defaults in pairs({
     rename = defaults.rename,
     codeactions = defaults.codeactions,
+    formatters = defaults.formatters,
   }) do
     local module_user_opts = user_opts[module_name]
     if type(module_user_opts) == 'table' then
