@@ -75,7 +75,7 @@ M.code_actions = function(opts)
 
     for client_id, response in pairs(results_lsp) do
       if response.result and next(response.result) ~= nil then
-        local client = vim.lsp.get_client_by_id(client_id)
+        local client = vim.lsp.get_clients({ id = client_id })[1]
 
         table.insert(menu_items, Menu.separator(Text('(' .. client.name .. ')', 'Comment')))
 

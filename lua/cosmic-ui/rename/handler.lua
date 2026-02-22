@@ -23,7 +23,7 @@ return function(err, result, ctx)
     logger:log(msg, { title = ('Rename: %s -> %s'):format(currName, new_word) })
   end
 
-  local client = vim.lsp.get_client_by_id(ctx.client_id)
+  local client = vim.lsp.get_clients({ id = ctx.client_id })[1]
   local offset_encoding = client and client.offset_encoding or 'utf-16'
   vim.lsp.util.apply_workspace_edit(result, offset_encoding)
 end
