@@ -34,7 +34,7 @@ local function rename(popup_opts, opts)
     relative = 'cursor',
     border = {
       highlight = user_border.highlight,
-      style = user_border.style or _G.CosmicUI_user_opts.border_style,
+      style = user_border.style or vim.o.winborder,
       text = {
         top = Text(user_border.title, user_border.title_hl),
         top_align = user_border.title_align,
