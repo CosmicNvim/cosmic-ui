@@ -161,6 +161,11 @@ vim.keymap.set("n", "<leader>fm", function()
 end, { silent = true, desc = "Format buffer" })
 ```
 
+Formatting behavior:
+- If Conform.nvim is installed and conform backend is enabled, `format()` uses Conform.
+- If Conform.nvim is unavailable (or conform backend is disabled), `format()` falls back to LSP when LSP backend is enabled.
+- When Conform is used, LSP backend toggle controls Conform LSP usage (`lsp_format` is clamped to `"never"` when LSP is disabled).
+
 More usage examples:
 
 - Rename: [`docs/features.md#rename`](docs/features.md#rename)

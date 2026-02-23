@@ -4,7 +4,6 @@ local logger = utils.Logger
 
 local M = {}
 
-local backend_order = { 'conform', 'lsp' }
 local default_backend_state = {
   lsp = true,
   conform = true,
@@ -626,16 +625,7 @@ local function mutate_item(opts, mutator, action_name)
   )
 end
 
-local function run_conform(bufnr, scope, async, conform_opts, callback)
-  local conform = get_conform_module()
-  if not conform then
-    warn_once('Conform.nvim not available; skipping conform formatter.')
-    if callback then
-      callback(false)
-    end
-    return false
-  end
-
+local function run_conform(conform, bufnr, scope, async, conform_opts, lsp_enabled)
   local names = select(1, get_conform_formatter_names(bufnr)) or {}
   local allowed = {}
   for _, name in ipairs(names) do
@@ -660,40 +650,57 @@ local function run_conform(bufnr, scope, async, conform_opts, callback)
     allowed = intersect
   end
 
-  if #allowed == 0 then
-    warn_once('Conform formatting unavailable (all conform formatters disabled or not runnable).')
-    if callback then
-      callback(false)
-    end
-    return false
+  local user_opts = vim.deepcopy(conform_opts or {})
+  local explicit_lsp_format = user_opts.lsp_format
+  local user_filter = type(user_opts.filter) == 'function' and user_opts.filter or nil
+  user_opts.formatters = nil
+  user_opts.filter = nil
+
+  local lsp_format
+  if lsp_enabled then
+    lsp_format = explicit_lsp_format or 'fallback'
+  else
+    lsp_format = 'never'
   end
 
-  local user_opts = vim.deepcopy(conform_opts or {})
-  user_opts.formatters = nil
+  local can_use_lsp = lsp_format ~= 'never'
+  if #allowed == 0 and not can_use_lsp then
+    warn_once('Conform formatting unavailable (all conform formatters disabled or not runnable).')
+    return false
+  end
 
   local opts = utils.merge({
     bufnr = bufnr,
     async = async,
     lsp_fallback = false,
-    lsp_format = 'never',
+    lsp_format = lsp_format,
   }, user_opts)
   opts.formatters = allowed
+
+  if lsp_enabled then
+    local _, enabled_ids = get_lsp_items(bufnr, scope)
+    opts.filter = function(client)
+      if not enabled_ids[client.id] then
+        return false
+      end
+      if user_filter then
+        return user_filter(client)
+      end
+      return true
+    end
+  elseif user_filter then
+    opts.filter = user_filter
+  end
 
   if async then
     local ok, err = pcall(conform.format, opts, function(format_err)
       if format_err then
         logger:error(('Conform format failed: %s'):format(format_err))
       end
-      if callback then
-        callback(true)
-      end
     end)
 
     if not ok then
       logger:error(('Conform format failed: %s'):format(err))
-      if callback then
-        callback(false)
-      end
       return false
     end
 
@@ -703,15 +710,9 @@ local function run_conform(bufnr, scope, async, conform_opts, callback)
   local ok, err = pcall(conform.format, opts)
   if not ok then
     logger:error(('Conform format failed: %s'):format(err))
-    if callback then
-      callback(false)
-    end
     return false
   end
 
-  if callback then
-    callback(true)
-  end
   return true
 end
 
@@ -772,59 +773,45 @@ local function format_internal(opts, async)
     requested_set[backend] = true
   end
 
-  local should_run = {}
-  for _, backend in ipairs(backend_order) do
-    if requested_set[backend] and get_effective_backend_state(backend, scope, bufnr) then
-      table.insert(should_run, backend)
-    end
-  end
-
-  if #should_run == 0 then
+  local conform_enabled = requested_set.conform and get_effective_backend_state('conform', scope, bufnr)
+  local lsp_enabled = requested_set.lsp and get_effective_backend_state('lsp', scope, bufnr)
+  if not conform_enabled and not lsp_enabled then
     logger:warn('No enabled formatters available for this scope.')
     return false
   end
 
   local conform_opts = vim.deepcopy(opts.conform or {})
   local lsp_opts = vim.deepcopy(opts.lsp or {})
-  local ran = false
 
-  local function run_lsp_stage()
-    for _, backend in ipairs(should_run) do
-      if backend == 'lsp' then
-        ran = run_lsp(bufnr, scope, async, lsp_opts) or ran
-      end
+  local conform = get_conform_module()
+  if conform then
+    if conform_enabled then
+      return run_conform(conform, bufnr, scope, async, conform_opts, lsp_enabled)
+    end
+
+    if lsp_enabled then
+      return run_lsp(bufnr, scope, async, lsp_opts)
+    end
+
+    logger:warn('No enabled formatters available for this scope.')
+    return false
+  end
+
+  if conform_enabled then
+    if lsp_enabled then
+      warn_once('Conform.nvim not available; using LSP formatting fallback.')
+    else
+      warn_once('Conform.nvim not available; skipping conform formatter.')
+      return false
     end
   end
 
-  if async then
-    for _, backend in ipairs(should_run) do
-      if backend == 'conform' then
-        local started = run_conform(bufnr, scope, true, conform_opts, function(did_run)
-          ran = did_run or ran
-          run_lsp_stage()
-        end)
-
-        if not started then
-          run_lsp_stage()
-        end
-
-        return started or ran
-      end
-    end
-
-    run_lsp_stage()
-    return ran
+  if lsp_enabled then
+    return run_lsp(bufnr, scope, async, lsp_opts)
   end
 
-  for _, backend in ipairs(should_run) do
-    if backend == 'conform' then
-      ran = run_conform(bufnr, scope, false, conform_opts) or ran
-    elseif backend == 'lsp' then
-      ran = run_lsp(bufnr, scope, false, lsp_opts) or ran
-    end
-  end
-
-  return ran
+  logger:warn('No enabled formatters available for this scope.')
+  return false
 end
 
 local function close_ui()

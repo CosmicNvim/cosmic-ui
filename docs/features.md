@@ -212,7 +212,7 @@ Returns:
 
 ### API: `format(opts?)`, `format_async(opts?)`
 
-Runs formatting through enabled backends.
+Runs formatting with Conform-first routing while respecting backend toggles.
 
 `opts` definition:
 
@@ -220,14 +220,21 @@ Runs formatting through enabled backends.
 | --- | --- | --- | --- | --- |
 | `scope` | `"buffer"\|"global"\|nil` | No | `"buffer"` | Scope for backend/item filtering. |
 | `bufnr` | `integer\|nil` | No | current buffer (`0`) | Buffer to format. |
-| `backend` | `"lsp"\|"conform"\|table\|nil` | No | both backends | Backend(s) to run. |
+| `backend` | `"lsp"\|"conform"\|table\|nil` | No | both backends | Backend request selector. |
 | `conform` | `table\|nil` | No | `{}` | Extra options passed to conform formatting logic. |
 | `lsp` | `table\|nil` | No | `{}` | Extra options passed to `vim.lsp.buf.format`. |
 
 Notes:
-- `format_async` runs conform and/or LSP asynchronously.
+- Routing:
+  - If Conform is installed and conform backend is enabled/requested, `conform.format()` is used.
+  - Else if LSP backend is enabled/requested, `vim.lsp.buf.format()` is used.
+  - If neither backend is enabled/requested, formatting no-ops with warning.
+- Toggle-authoritative LSP clamping under Conform:
+  - If LSP backend is disabled, Conform is forced to `lsp_format = "never"`.
+  - If LSP backend is enabled, explicit `conform.lsp_format` is respected.
+  - If LSP backend is enabled and `conform.lsp_format` is omitted, default is `"fallback"`.
 - `conform.formatters` is intersected with enabled conform items.
-- `lsp.filter` is combined with enabled LSP client filtering.
+- For Conform LSP execution, Conform `filter` is combined with enabled LSP item filtering.
 
 ### Usage examples
 

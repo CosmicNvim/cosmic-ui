@@ -63,7 +63,7 @@ formatters = {
 | --- | --- | --- | --- | --- |
 | `scope` | `"buffer"\|"global"\|nil` | No | `"buffer"` | Scope for backend/item filtering. |
 | `bufnr` | `integer\|nil` | No | current buffer (`0`) | Buffer to format. |
-| `backend` | `"lsp"\|"conform"\|table\|nil` | No | both backends | Backend(s) to run. |
+| `backend` | `"lsp"\|"conform"\|table\|nil` | No | both backends | Backend request selector. |
 | `conform` | `table\|nil` | No | `{}` | Extra options for conform formatting logic. |
 | `lsp` | `table\|nil` | No | `{}` | Extra options for `vim.lsp.buf.format`. |
 
@@ -136,13 +136,20 @@ Returns: status table with `backends`, `lsp_clients`, and `conform`.
 
 ### `require("cosmic-ui").formatters.format(opts?)`
 
-Runs synchronous formatting for enabled backends.
+Runs synchronous formatting with Conform-first routing.
 Opts: `FormatOpts`.
 Returns: `boolean|nil`.
 
+Behavior:
+- If Conform is installed and conform backend is enabled/requested, runs `conform.format()`.
+- Else if LSP backend is enabled/requested, runs `vim.lsp.buf.format()`.
+- Under Conform path:
+  - LSP toggle OFF forces `conform.lsp_format = "never"`.
+  - LSP toggle ON respects explicit `conform.lsp_format`; defaults to `"fallback"` when omitted.
+
 ### `require("cosmic-ui").formatters.format_async(opts?)`
 
-Runs asynchronous formatting for enabled backends.
+Runs asynchronous formatting with the same routing rules as `format`.
 Opts: `FormatOpts`.
 Returns: `boolean|nil`.
 
