@@ -165,6 +165,8 @@ Formatting behavior:
 - If Conform.nvim is installed and conform backend is enabled, `format()` uses Conform.
 - If Conform.nvim is unavailable (or conform backend is disabled), `format()` falls back to LSP when LSP backend is enabled.
 - When Conform is used, LSP backend toggle controls Conform LSP usage (`lsp_format` is clamped to `"never"` when LSP is disabled).
+- When LSP is enabled, Conform mode precedence is: `opts.conform.lsp_format` > filetype-specific Conform mode > global Conform mode > `"never"`.
+- Fallback visibility is shown globally and per-LSP in the formatter UI, and exposed via `formatters.status()`.
 
 More usage examples:
 

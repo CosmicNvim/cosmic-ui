@@ -133,6 +133,20 @@ Returns:
 Returns formatter status snapshot.
 Opts: `OpenOpts`.
 Returns: status table with `backends`, `lsp_clients`, and `conform`.
+Includes fallback visibility:
+- `conform.fallback`:
+  - `requested_mode` (`opts.conform.lsp_format` when provided)
+  - `global_mode` (from `conform.default_format_opts.lsp_format`)
+  - `specific_mode` + `specific_filetype` (from matching `formatters_by_ft` entry)
+  - `display_global_mode` (global Conform-config mode source for header rendering)
+  - `display_specific_mode` + `display_specific_filetype` (LSP header ghost text context, rendered as `<specific_mode_or_global_mode>`)
+  - `mode` (configured mode before backend clamp)
+  - `effective_mode` (`"never"|"fallback"|"prefer"|"first"|"last"`)
+  - `source` (effective source: `"requested"|"specific"|"global"|"default"|"clamped"`)
+  - `configured_source` (pre-clamp source: `"requested"|"specific"|"global"|"default"`)
+  - `uses_lsp`, `eligible_clients`, `total_clients`, `reason`
+- `lsp_clients[].conform_fallback`:
+  - `eligible`, `reason`, `mode`, `effective_mode`, `source`, `configured_source`
 
 ### `require("cosmic-ui").formatters.format(opts?)`
 
@@ -145,7 +159,17 @@ Behavior:
 - Else if LSP backend is enabled/requested, runs `vim.lsp.buf.format()`.
 - Under Conform path:
   - LSP toggle OFF forces `conform.lsp_format = "never"`.
-  - LSP toggle ON respects explicit `conform.lsp_format`; defaults to `"fallback"` when omitted.
+  - LSP toggle ON uses mode precedence:
+    - `opts.conform.lsp_format` (requested) >
+    - matching Conform filetype mode (`formatters_by_ft`) >
+    - Conform global default (`default_format_opts.lsp_format`) >
+    - `"never"` default
+  - Supported `lsp_format` values:
+    - `"never"`: never use LSP
+    - `"fallback"`: use LSP only when no other formatters are available
+    - `"prefer"`: use only LSP when available
+    - `"first"`: run LSP then other formatters
+    - `"last"`: run other formatters then LSP
 
 ### `require("cosmic-ui").formatters.format_async(opts?)`
 

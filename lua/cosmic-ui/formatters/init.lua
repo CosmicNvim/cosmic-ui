@@ -62,7 +62,7 @@ local function resolve_scope(scope)
     return scope
   end
 
-  logger:warn(("Invalid formatter scope `%s`; expected `buffer` or `global`."):format(tostring(scope)))
+  logger:warn(('Invalid formatter scope `%s`; expected `buffer` or `global`.'):format(tostring(scope)))
   return nil
 end
 
@@ -83,7 +83,7 @@ local function normalize_backends(backend)
     if backend == 'lsp' or backend == 'conform' then
       return { backend }
     end
-    logger:warn(("Invalid formatter backend `%s`; expected `lsp` or `conform`."):format(backend))
+    logger:warn(('Invalid formatter backend `%s`; expected `lsp` or `conform`.'):format(backend))
     return nil
   end
 
@@ -97,7 +97,7 @@ local function normalize_backends(backend)
           table.insert(out, item)
         end
       else
-        logger:warn(("Ignoring invalid formatter backend `%s`."):format(tostring(item)))
+        logger:warn(('Ignoring invalid formatter backend `%s`.'):format(tostring(item)))
       end
     end
 
@@ -118,7 +118,7 @@ local function normalize_source(source)
     return source
   end
 
-  logger:warn(("Invalid formatter source `%s`; expected `lsp` or `conform`."):format(tostring(source)))
+  logger:warn(('Invalid formatter source `%s`; expected `lsp` or `conform`.'):format(tostring(source)))
   return nil
 end
 
@@ -370,7 +370,7 @@ local function lsp_client_reason(client)
     return 'disabled by config'
   end
 
-  return 'no formatting support'
+  return 'unsupported'
 end
 
 local function normalize_formatter_name(entry)
@@ -459,6 +459,129 @@ local function get_conform_formatter_names(bufnr)
 
   table.sort(names)
   return names, nil
+end
+
+local lsp_format_modes = {
+  never = true,
+  fallback = true,
+  prefer = true,
+  first = true,
+  last = true,
+}
+
+local function normalize_lsp_format_mode(mode)
+  if type(mode) == 'string' and lsp_format_modes[mode] then
+    return mode
+  end
+  return nil
+end
+
+local function resolve_conform_mode_sources(bufnr, requested_mode)
+  local out = {
+    available = false,
+    requested_mode = normalize_lsp_format_mode(requested_mode),
+    global_mode = nil,
+    specific_mode = nil,
+    specific_filetype = nil,
+  }
+
+  local conform = get_conform_module()
+  if not conform then
+    return out
+  end
+
+  out.available = true
+  if type(conform.default_format_opts) == 'table' then
+    out.global_mode = normalize_lsp_format_mode(conform.default_format_opts.lsp_format)
+  end
+
+  local by_ft = type(conform.formatters_by_ft) == 'table' and conform.formatters_by_ft or nil
+  if not by_ft then
+    return out
+  end
+
+  local filetype = vim.bo[bufnr].filetype
+  local filetypes = vim.split(filetype, '.', { plain = true })
+  local rev_filetypes = { filetype }
+  for i = #filetypes, 1, -1 do
+    table.insert(rev_filetypes, filetypes[i])
+  end
+  table.insert(rev_filetypes, '_')
+
+  for _, candidate in ipairs(rev_filetypes) do
+    local ft_formatters = by_ft[candidate]
+    if ft_formatters ~= nil then
+      local has_config = false
+      local specific_mode = nil
+
+      if type(ft_formatters) == 'function' then
+        has_config = true
+        local ok, value = pcall(ft_formatters, bufnr)
+        if ok and type(value) == 'table' then
+          specific_mode = normalize_lsp_format_mode(value.lsp_format)
+        end
+      elseif type(ft_formatters) == 'table' then
+        has_config = next(ft_formatters) ~= nil
+        if has_config then
+          specific_mode = normalize_lsp_format_mode(ft_formatters.lsp_format)
+        end
+      else
+        has_config = true
+      end
+
+      if has_config then
+        out.specific_filetype = candidate
+        out.specific_mode = specific_mode
+        break
+      end
+    end
+  end
+
+  return out
+end
+
+local function resolve_configured_conform_lsp_mode(mode_sources)
+  local mode
+  local source
+  if mode_sources.requested_mode then
+    mode = mode_sources.requested_mode
+    source = 'requested'
+  elseif mode_sources.specific_mode then
+    mode = mode_sources.specific_mode
+    source = 'specific'
+  elseif mode_sources.global_mode then
+    mode = mode_sources.global_mode
+    source = 'global'
+  else
+    mode = 'never'
+    source = 'default'
+  end
+  return mode, source
+end
+
+local function resolve_effective_conform_lsp_mode(mode_sources, lsp_enabled)
+  local configured_mode, configured_source = resolve_configured_conform_lsp_mode(mode_sources)
+  local mode = configured_mode
+  local source = configured_source
+  if not lsp_enabled then
+    mode = 'never'
+    source = 'clamped'
+  end
+
+  return mode, source, configured_mode, configured_source
+end
+
+local function conform_mode_uses_lsp(mode, any_formatters)
+  if mode == 'never' then
+    return false
+  end
+  if not any_formatters then
+    return true
+  end
+  if mode == 'fallback' then
+    return false
+  end
+  return true
 end
 
 local function get_lsp_items(bufnr, scope)
@@ -650,20 +773,15 @@ local function run_conform(conform, bufnr, scope, async, conform_opts, lsp_enabl
     allowed = intersect
   end
 
+  local mode_sources = resolve_conform_mode_sources(bufnr, conform_opts and conform_opts.lsp_format)
+  local effective_lsp_format = select(1, resolve_effective_conform_lsp_mode(mode_sources, lsp_enabled))
+  local any_formatters = #allowed > 0
+  local can_use_lsp = conform_mode_uses_lsp(effective_lsp_format, any_formatters)
+
   local user_opts = vim.deepcopy(conform_opts or {})
-  local explicit_lsp_format = user_opts.lsp_format
   local user_filter = type(user_opts.filter) == 'function' and user_opts.filter or nil
   user_opts.formatters = nil
   user_opts.filter = nil
-
-  local lsp_format
-  if lsp_enabled then
-    lsp_format = explicit_lsp_format or 'fallback'
-  else
-    lsp_format = 'never'
-  end
-
-  local can_use_lsp = lsp_format ~= 'never'
   if #allowed == 0 and not can_use_lsp then
     warn_once('Conform formatting unavailable (all conform formatters disabled or not runnable).')
     return false
@@ -673,11 +791,11 @@ local function run_conform(conform, bufnr, scope, async, conform_opts, lsp_enabl
     bufnr = bufnr,
     async = async,
     lsp_fallback = false,
-    lsp_format = lsp_format,
+    lsp_format = effective_lsp_format,
   }, user_opts)
   opts.formatters = allowed
 
-  if lsp_enabled then
+  if lsp_enabled and effective_lsp_format ~= 'never' then
     local _, enabled_ids = get_lsp_items(bufnr, scope)
     opts.filter = function(client)
       if not enabled_ids[client.id] then
@@ -688,7 +806,7 @@ local function run_conform(conform, bufnr, scope, async, conform_opts, lsp_enabl
       end
       return true
     end
-  elseif user_filter then
+  elseif user_filter and effective_lsp_format ~= 'never' then
     opts.filter = user_filter
   end
 
@@ -1029,6 +1147,12 @@ end
 local function build_rows(ui, status, icons)
   local rows = {}
 
+  local fallback = status.conform.fallback or {}
+  local global_mode = fallback.display_global_mode or 'never'
+  local specific_mode = fallback.display_specific_mode
+  local lsp_header_mode = specific_mode or global_mode
+  local lsp_header_ghost = ('  %s'):format(lsp_header_mode)
+
   table.insert(rows, {
     id = 'section_conform',
     text = 'Conform',
@@ -1079,9 +1203,10 @@ local function build_rows(ui, status, icons)
 
   table.insert(rows, {
     id = 'section_lsp',
-    text = 'LSP',
+    text = 'LSP' .. lsp_header_ghost,
     toggleable = false,
     kind = 'section',
+    ghost_text = lsp_header_ghost,
   })
 
   if #status.lsp_clients == 0 then
@@ -1102,7 +1227,6 @@ local function build_rows(ui, status, icons)
       if not client.available and client.reason then
         suffix = (' (%s)'):format(client.reason)
       end
-
       table.insert(rows, {
         id = 'lsp_' .. client.name,
         text = ('%s %s LSP: %s%s'):format(status_icon, icons.lsp, client.name, suffix),
@@ -1148,6 +1272,10 @@ local function apply_ui_highlights(ui, lines)
     local lnum = row.lnum - 1
     if row.kind == 'section' then
       add_hl(ui.buf, lnum, 'CosmicUiFmtSection', 0, -1)
+      if row.ghost_text then
+        local ghost_start, ghost_end = find_token(line, row.ghost_text, 1)
+        add_hl(ui.buf, lnum, 'CosmicUiFmtHintText', ghost_start, ghost_end)
+      end
     else
       local status_start, status_end = find_token(line, row.status_icon, 1)
       add_hl(ui.buf, lnum, status_hl_group(row.status), status_start, status_end)
@@ -1159,6 +1287,11 @@ local function apply_ui_highlights(ui, lines)
         local reason_text = ('(%s)'):format(row.reason)
         local reason_start, reason_end = find_token(line, reason_text, (icon_end or 0) + 1)
         add_hl(ui.buf, lnum, 'CosmicUiFmtUnavailable', reason_start, reason_end)
+      end
+
+      if row.ghost_text then
+        local ghost_start, ghost_end = find_token(line, row.ghost_text, (icon_end or 0) + 1)
+        add_hl(ui.buf, lnum, 'CosmicUiFmtHintText', ghost_start, ghost_end)
       end
     end
   end
@@ -1653,6 +1786,84 @@ M.status = function(opts)
   local conform_state, conform_enabled = conform_backend_state(scope, bufnr)
   local lsp_clients = get_lsp_items(bufnr, scope)
   local conform_data = get_conform_items(bufnr, scope)
+  local mode_sources = resolve_conform_mode_sources(bufnr, nil)
+  local fallback_mode, fallback_source, configured_mode, configured_source =
+    resolve_effective_conform_lsp_mode(mode_sources, lsp_enabled)
+  local display_global_mode = mode_sources.global_mode or 'never'
+  local display_specific_mode = mode_sources.specific_mode
+  local display_specific_filetype = mode_sources.specific_filetype
+  local fallback_reason = nil
+  local fallback_available = conform_data.available
+  local any_conform_formatters = false
+  for _, formatter in ipairs(conform_data.items) do
+    if formatter.effective_enabled then
+      any_conform_formatters = true
+      break
+    end
+  end
+  local uses_lsp = conform_mode_uses_lsp(fallback_mode, any_conform_formatters)
+  local eligible_clients = 0
+
+  if not fallback_available then
+    fallback_reason = 'conform unavailable'
+  elseif not conform_enabled then
+    fallback_reason = 'conform backend disabled'
+  elseif not lsp_enabled then
+    fallback_reason = 'lsp backend disabled'
+  elseif fallback_mode == 'never' then
+    fallback_reason = 'mode never'
+  elseif not uses_lsp then
+    if fallback_mode == 'fallback' then
+      fallback_reason = 'formatters available'
+    elseif fallback_mode == 'last' then
+      fallback_reason = 'no conform formatters'
+    else
+      fallback_reason = 'mode inactive'
+    end
+  end
+
+  for _, client in ipairs(lsp_clients) do
+    local fallback = {
+      eligible = false,
+      reason = 'eligible',
+      mode = configured_mode,
+      effective_mode = fallback_mode,
+      source = fallback_source,
+      configured_source = configured_source,
+    }
+
+    if not fallback_available then
+      fallback.reason = 'conform unavailable'
+    elseif not conform_enabled then
+      fallback.reason = 'conform backend disabled'
+    elseif not lsp_enabled then
+      fallback.reason = 'lsp backend disabled'
+    elseif fallback_mode == 'never' then
+      fallback.reason = 'mode never'
+    elseif not uses_lsp then
+      if fallback_mode == 'fallback' then
+        fallback.reason = 'formatters available'
+      elseif fallback_mode == 'last' then
+        fallback.reason = 'no conform formatters'
+      else
+        fallback.reason = 'mode inactive'
+      end
+    elseif not client.available then
+      fallback.reason = 'lsp client unavailable'
+    elseif not client.enabled then
+      fallback.reason = 'lsp client disabled'
+    else
+      fallback.eligible = true
+      fallback.reason = 'eligible'
+      eligible_clients = eligible_clients + 1
+    end
+
+    client.conform_fallback = fallback
+  end
+
+  if not fallback_reason and eligible_clients == 0 then
+    fallback_reason = 'no eligible lsp clients'
+  end
 
   return {
     scope = scope,
@@ -1674,6 +1885,26 @@ M.status = function(opts)
       available = conform_data.available,
       reason = conform_data.reason,
       formatters = conform_data.items,
+      fallback = {
+        available = fallback_available,
+        mode = configured_mode,
+        effective_mode = fallback_mode,
+        requested_mode = mode_sources.requested_mode,
+        global_mode = mode_sources.global_mode,
+        specific_mode = mode_sources.specific_mode,
+        specific_filetype = mode_sources.specific_filetype,
+        display_global_mode = display_global_mode,
+        display_specific_mode = display_specific_mode,
+        display_specific_filetype = display_specific_filetype,
+        source = fallback_source,
+        configured_source = configured_source,
+        uses_lsp = uses_lsp,
+        conform_enabled = conform_enabled,
+        lsp_enabled = lsp_enabled,
+        eligible_clients = eligible_clients,
+        total_clients = #lsp_clients,
+        reason = fallback_reason,
+      },
     },
   }
 end

@@ -209,6 +209,27 @@ Returns a formatter status snapshot for UI and inspection.
 
 Returns:
 - Table containing `backends`, `lsp_clients`, and `conform` formatter availability/details.
+- `conform.fallback` includes global fallback visibility:
+  - `requested_mode` (call-level mode, when provided)
+  - `global_mode` (from Conform `default_format_opts.lsp_format`)
+  - `specific_mode` (from matched filetype/specific Conform config)
+  - `display_global_mode` (UI global mode shown in Conform header ghost text)
+  - `display_specific_mode` / `display_specific_filetype` (UI per-item specific mode context)
+  - `mode` (configured mode before backend clamp)
+  - `effective_mode` (`"never"`, `"fallback"`, `"prefer"`, `"first"`, `"last"`)
+  - `source` (effective source: `requested`, `specific`, `global`, `default`, `clamped`)
+  - `configured_source` (pre-clamp source: `requested`, `specific`, `global`, `default`)
+  - `uses_lsp` (`boolean`)
+  - `eligible_clients` / `total_clients`
+  - `reason` (for example: `conform unavailable`, `lsp backend disabled`, `no eligible lsp clients`)
+- Each `lsp_clients[]` entry includes `conform_fallback`:
+  - `eligible` (`boolean`)
+  - `reason` (for example: `eligible`, `lsp client disabled`, `lsp client unavailable`)
+  - `mode` (configured mode)
+  - `effective_mode` (`"never"`, `"fallback"`, `"prefer"`, `"first"`, `"last"`)
+  - `source` (effective source) and `configured_source` (pre-clamp source)
+- Formatter UI shows:
+  - an inline specific-or-global mode value on the LSP header (`<specific_mode_or_global_mode>`)
 
 ### API: `format(opts?)`, `format_async(opts?)`
 
@@ -231,8 +252,17 @@ Notes:
   - If neither backend is enabled/requested, formatting no-ops with warning.
 - Toggle-authoritative LSP clamping under Conform:
   - If LSP backend is disabled, Conform is forced to `lsp_format = "never"`.
-  - If LSP backend is enabled, explicit `conform.lsp_format` is respected.
-  - If LSP backend is enabled and `conform.lsp_format` is omitted, default is `"fallback"`.
+  - If LSP backend is enabled, effective mode precedence is:
+    - `opts.conform.lsp_format` (requested) >
+    - filetype/specific Conform mode >
+    - global Conform default mode >
+    - `"never"` default
+  - Valid `lsp_format` modes are:
+    - `"never"`: never use LSP
+    - `"fallback"`: use LSP only when no other formatter runs
+    - `"prefer"`: prefer only LSP when available
+    - `"first"`: run LSP first, then other formatters
+    - `"last"`: run other formatters, then LSP
 - `conform.formatters` is intersected with enabled conform items.
 - For Conform LSP execution, Conform `filter` is combined with enabled LSP item filtering.
 
