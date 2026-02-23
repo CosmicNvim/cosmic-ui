@@ -1,7 +1,7 @@
 <h1 align="center">💫 Cosmic-UI</h1>
 
 <p align="center">
-  <img alt="Neovim Minimum Version" src="https://img.shields.io/badge/Neovim-0.6.0+-blueviolet.svg?style=flat-square&logo=Neovim&logoColor=white)](https://github.com/neovim/neovim">
+  <img alt="Neovim Minimum Version" src="https://img.shields.io/badge/Neovim-0.11.0+-blueviolet.svg?style=flat-square&logo=Neovim&logoColor=white)](https://github.com/neovim/neovim">
   <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/CosmicNvim/cosmic-ui?style=flat-square&logo=Github">
   <a href="https://discord.gg/EwdrKzVbvJ">
     <img alt="Discord" src="https://img.shields.io/discord/901609359291854899?style=flat-square&logo=Discord">
@@ -16,6 +16,7 @@ Cosmic-UI is a simple wrapper around specific vim functionality. Built in order 
 
 - Rename floating popup & file change notification
 - Code Actions
+- Formatter toggles (LSP + Conform.nvim)
 
 ## 📷 Screenshots
 
@@ -32,7 +33,11 @@ Cosmic-UI is a simple wrapper around specific vim functionality. Built in order 
 ```lua
   use({
     'CosmicNvim/cosmic-ui',
-    requires = { 'MunifTanjim/nui.nvim', 'nvim-lua/plenary.nvim' },
+    requires = {
+      'MunifTanjim/nui.nvim',
+      'nvim-lua/plenary.nvim',
+      'nvim-tree/nvim-web-devicons',
+    },
     config = function()
       require('cosmic-ui').setup()
     end,
@@ -41,20 +46,22 @@ Cosmic-UI is a simple wrapper around specific vim functionality. Built in order 
 
 ## ⚙️ Configuration
 
-You may override any of the settings below by passing a config object to `.setup`
+Call `setup()` before using any module. Calling module APIs before setup will warn and no-op.
+
+Modules are enabled only when their key is present as a table in setup.
+
+You may override any of the settings below by passing a config object to `.setup`:
 
 ```lua
 {
-  -- default border to use
-  -- 'single', 'double', 'rounded', 'solid', 'shadow'
-  border_style = 'single',
+  notify_title = "CosmicUI",
 
-  -- rename popup settings
   rename = {
+    enabled = true, -- optional (defaults to true when table exists)
     border = {
       highlight = 'FloatBorder',
-      style = 'single',
-      title = ' Rename ',
+      style = nil, -- falls back to vim.o.winborder
+      title = 'Rename',
       title_align = 'left',
       title_hl = 'FloatBorder',
     },
@@ -62,41 +69,107 @@ You may override any of the settings below by passing a config object to `.setup
     prompt_hl = 'Comment',
   },
 
-  code_actions = {
+  codeactions = {
+    enabled = true, -- optional (defaults to true when table exists)
     min_width = nil,
     border = {
       bottom_hl = 'FloatBorder',
       highlight = 'FloatBorder',
-      style = 'single',
+      style = nil, -- falls back to vim.o.winborder
       title = 'Code Actions',
       title_align = 'center',
       title_hl = 'FloatBorder',
     },
-  }
+  },
+
+  formatters = {
+    enabled = true, -- optional (defaults to true when table exists)
+  },
 }
 ```
 
+Notes:
+- Missing module key means disabled.
+- `enabled = false` disables a module.
+- Unknown setup keys are ignored with a warning.
+- `code_actions` is not a supported key; use `codeactions`.
+
+## 📚 Module Docs
+
+### Feature modules
+
+- `rename`: Cursor-local rename input that dispatches LSP rename requests.  
+  Docs: [`docs/features.md#rename`](docs/features.md#rename)
+- `codeactions`: Aggregates LSP code actions for cursor/range and executes the selected action.  
+  Docs: [`docs/features.md#codeactions`](docs/features.md#codeactions)
+- `formatters`: Toggle and run Conform/LSP formatting with buffer/global scope control and per-item overrides.  
+  Docs: [`docs/features.md#formatters`](docs/features.md#formatters)
+
+### Core modules
+
+- `cosmic-ui` root module (setup + lazy feature loading): [`docs/cosmic-ui.md`](docs/cosmic-ui.md)
+- `config` (merged options + setup/module gating): [`docs/config.md`](docs/config.md)
+- `utils` (shared helpers + logger): [`docs/utils.md`](docs/utils.md)
+
 ## ✨ Usage
 
-#### Rename
+### Setup
 
 ```lua
-function map(mode, lhs, rhs, opts)
-  local options = { noremap = true, silent = true }
-  if opts then
-    options = vim.tbl_extend('force', options, opts)
-  end
-  vim.api.nvim_set_keymap(mode, lhs, rhs, options)
-end
+local CosmicUI = require("cosmic-ui")
 
-map('n', 'gn', '<cmd>lua require("cosmic-ui").rename()<cr>')
+CosmicUI.setup({
+  rename = {},
+  codeactions = {},
+  formatters = {},
+})
 ```
 
-#### Code Actions
+### Rename
 
 ```lua
-map('n', '<leader>ga', '<cmd>lua require("cosmic-ui").code_actions()<cr>')
-map('v', '<leader>ga', '<cmd>lua require("cosmic-ui").range_code_actions()<cr>')
+vim.keymap.set("n", "gn", function()
+  require("cosmic-ui").rename.open()
+end, { silent = true, desc = "Rename" })
 ```
 
-_More coming soon..._
+### Codeactions
+
+```lua
+vim.keymap.set("n", "<leader>ga", function()
+  require("cosmic-ui").codeactions.open()
+end, { silent = true, desc = "Code actions" })
+
+vim.keymap.set("v", "<leader>ga", function()
+  require("cosmic-ui").codeactions.range()
+end, { silent = true, desc = "Range code actions" })
+```
+
+### Formatters
+
+```lua
+vim.keymap.set("n", "<leader>gf", function()
+  require("cosmic-ui").formatters.open()
+end, { silent = true, desc = "Toggle formatters (buffer)" })
+
+vim.keymap.set("n", "<leader>gF", function()
+  require("cosmic-ui").formatters.open({ scope = "global" })
+end, { silent = true, desc = "Toggle formatters (global)" })
+
+vim.keymap.set("n", "<leader>fm", function()
+  require("cosmic-ui").formatters.format()
+end, { silent = true, desc = "Format buffer" })
+```
+
+Formatting behavior:
+- If Conform.nvim is installed and conform backend is enabled, `format()` uses Conform.
+- If Conform.nvim is unavailable (or conform backend is disabled), `format()` falls back to LSP when LSP backend is enabled.
+- When Conform is used, LSP backend toggle controls Conform LSP usage (`lsp_format` is clamped to `"never"` when LSP is disabled).
+- When LSP is enabled, Conform mode precedence is: `opts.conform.lsp_format` > filetype-specific Conform mode > global Conform mode > `"never"`.
+- Fallback visibility is shown globally and per-LSP in the formatter UI, and exposed via `formatters.status()`.
+
+More usage examples:
+
+- Rename: [`docs/features.md#rename`](docs/features.md#rename)
+- Codeactions: [`docs/features.md#codeactions`](docs/features.md#codeactions)
+- Formatters: [`docs/features.md#formatters`](docs/features.md#formatters)

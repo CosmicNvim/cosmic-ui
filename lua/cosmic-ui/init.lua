@@ -1,55 +1,39 @@
-local utils = require('cosmic-ui.utils')
-local M = {}
+local config = require('cosmic-ui.config')
 
-local default_border = 'single'
-local default_user_opts = {
-  notify_title = 'CosmicUI',
-  border_style = default_border,
-  rename = {
-    border = {
-      highlight = 'FloatBorder',
-      style = nil,
-      title = 'Rename',
-      title_align = 'left',
-      title_hl = 'FloatBorder',
-    },
-    prompt = '> ',
-    prompt_hl = 'Comment',
-  },
-  code_actions = {
-    min_width = nil,
-    border = {
-      bottom_hl = 'FloatBorder',
-      highlight = 'FloatBorder',
-      style = nil,
-      title = 'Code Actions',
-      title_align = 'center',
-      title_hl = 'FloatBorder',
-    },
-  },
+local module_map = {
+  rename = 'cosmic-ui.modules.rename',
+  codeactions = 'cosmic-ui.modules.codeactions',
+  formatters = 'cosmic-ui.modules.formatters',
 }
 
-_G.CosmicUI_user_opts = {}
+local M = {
+  _modules = {},
+}
 
 M.setup = function(user_opts)
-  -- get parsed user opts
-  _G.CosmicUI_user_opts = utils.merge(default_user_opts, user_opts or {})
-  user_opts = _G.CosmicUI_user_opts
+  config.setup(user_opts)
 end
 
-M.rename = function(popup_opts, opts)
-  return require('cosmic-ui.rename')(popup_opts, opts)
+M.is_setup = function()
+  return config.is_setup()
 end
 
-M.code_actions = function(opts)
-  require('cosmic-ui.code-action').code_actions(opts)
-end
+setmetatable(M, {
+  __index = function(tbl, key)
+    local module_path = module_map[key]
+    if not module_path then
+      return nil
+    end
 
-M.range_code_actions = function(opts)
-  opts = utils.merge({
-    params = vim.lsp.util.make_given_range_params(),
-  }, opts or {})
-  M.code_actions(opts)
-end
+    local cached = rawget(tbl._modules, key)
+    if cached then
+      return cached
+    end
+
+    local loaded = require(module_path)
+    tbl._modules[key] = loaded
+    return loaded
+  end,
+})
 
 return M

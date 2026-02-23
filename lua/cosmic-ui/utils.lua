@@ -1,4 +1,5 @@
 local M = {}
+local config = require('cosmic-ui.config')
 
 M.merge = function(...)
   return vim.tbl_deep_extend('force', ...)
@@ -54,25 +55,12 @@ M.default_mappings = function(input)
   end)
 end
 
-M.set_border = function(border, tbl)
-  for k, v in pairs(tbl) do
-    if k == 'border' then
-      tbl[k] = border
-    end
-
-    if type(v) == 'table' then
-      tbl[k] = M.set_border(border, v)
-    end
-  end
-
-  return tbl
-end
-
 M.Logger = {}
 M.Logger.__index = M.Logger
 
 local function log(type, msg, opts)
-  local title = _G.CosmicUI_user_opts.notify_title
+  local global_opts = config.get() or {}
+  local title = global_opts.notify_title or 'CosmicUI'
   if vim.islist(msg) then
     -- regular vim.notify can't take tables of strings
     local tmp_list = msg
