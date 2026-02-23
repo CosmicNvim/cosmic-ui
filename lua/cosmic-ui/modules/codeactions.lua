@@ -1,19 +1,9 @@
-local config = require('cosmic-ui.config')
 local utils = require('cosmic-ui.utils')
+local shared = require('cosmic-ui.modules.shared')
 local M = {}
 
 local function can_run(method_name)
-  if not config.is_setup() then
-    config.warn_not_setup(method_name)
-    return false
-  end
-
-  if not config.module_enabled('codeactions') then
-    config.warn_module_disabled('codeactions')
-    return false
-  end
-
-  return true
+  return shared.can_run('codeactions', method_name)
 end
 
 M.open = function(opts)

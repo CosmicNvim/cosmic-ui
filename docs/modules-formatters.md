@@ -186,3 +186,42 @@ fmt.open()
 fmt.toggle({ backend = "lsp" })
 fmt.format_async({ backend = { "conform", "lsp" } })
 ```
+
+### Conform `format_on_save` example
+
+```lua
+require("conform").setup({
+  format_on_save = function(bufnr)
+    if not vim.g.format_on_save_enabled then
+      return
+    end
+
+    local ok, cosmic = pcall(require, "cosmic-ui")
+    if not (ok and cosmic.is_setup and cosmic.is_setup()) then
+      return { timeout_ms = 500, lsp_format = "fallback" }
+    end
+
+    local st = cosmic.formatters.status({ scope = "buffer", bufnr = bufnr })
+    local enabled = {}
+    for _, f in ipairs((st and st.conform and st.conform.formatters) or {}) do
+      if f.enabled then
+        enabled[#enabled + 1] = f.name
+      end
+    end
+
+    if #enabled == 0 then
+      return nil
+    end
+
+    return {
+      timeout_ms = 500,
+      formatters = enabled,
+      lsp_format = "never",
+    }
+  end,
+})
+```
+
+Notes:
+- This example makes save-formatting honor CosmicUI Conform item toggles.
+- LSP code-action save hooks (for example ESLint fix-all) are separate from Conform formatting.

@@ -1,14 +1,8 @@
-local config = require('cosmic-ui.config')
+local shared = require('cosmic-ui.modules.shared')
 local M = {}
 
 M.open = function(popup_opts, opts)
-  if not config.is_setup() then
-    config.warn_not_setup('rename.open(...)')
-    return
-  end
-
-  if not config.module_enabled('rename') then
-    config.warn_module_disabled('rename')
+  if not shared.can_run('rename', 'rename.open(...)') then
     return
   end
 

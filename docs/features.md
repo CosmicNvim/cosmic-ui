@@ -296,3 +296,45 @@ require("cosmic-ui").formatters.toggle_item({
   scope = "buffer",
 })
 ```
+
+### Conform `format_on_save` example
+
+Use this when you want save-formatting to respect CosmicUI Conform item toggles.
+It formats only with enabled Conform formatters and skips save-format when none are enabled.
+
+```lua
+require("conform").setup({
+  format_on_save = function(bufnr)
+    if not vim.g.format_on_save_enabled then
+      return
+    end
+
+    local ok, cosmic = pcall(require, "cosmic-ui")
+    if not (ok and cosmic.is_setup and cosmic.is_setup()) then
+      return { timeout_ms = 500, lsp_format = "fallback" }
+    end
+
+    local st = cosmic.formatters.status({ scope = "buffer", bufnr = bufnr })
+    local enabled = {}
+    for _, f in ipairs((st and st.conform and st.conform.formatters) or {}) do
+      if f.enabled then
+        enabled[#enabled + 1] = f.name
+      end
+    end
+
+    if #enabled == 0 then
+      return nil
+    end
+
+    return {
+      timeout_ms = 500,
+      formatters = enabled,
+      lsp_format = "never",
+    }
+  end,
+})
+```
+
+Note:
+- This controls Conform formatting only.
+- LSP code actions on save (for example `source.fixAll.eslint`) are separate and must be configured independently.

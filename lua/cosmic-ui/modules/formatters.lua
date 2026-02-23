@@ -1,18 +1,8 @@
-local config = require('cosmic-ui.config')
+local shared = require('cosmic-ui.modules.shared')
 local M = {}
 
 local function can_run(method_name)
-  if not config.is_setup() then
-    config.warn_not_setup(method_name)
-    return false
-  end
-
-  if not config.module_enabled('formatters') then
-    config.warn_module_disabled('formatters')
-    return false
-  end
-
-  return true
+  return shared.can_run('formatters', method_name)
 end
 
 M.open = function(opts)
