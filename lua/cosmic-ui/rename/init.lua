@@ -3,12 +3,22 @@ local guard = require('cosmic-ui.guard')
 
 local M = {}
 
-M.open = function(popup_opts, opts)
+M.open = function(...)
   if not guard.can_run('rename', 'rename.open(...)') then
     return
   end
 
-  return ui.open(popup_opts, opts)
+  local argc = select('#', ...)
+  if argc > 1 then
+    error('rename.open: invalid arguments')
+  end
+
+  local opts = ...
+  if opts ~= nil and type(opts) ~= 'table' then
+    error('rename.open: invalid arguments')
+  end
+
+  return ui.open(opts)
 end
 
 return M

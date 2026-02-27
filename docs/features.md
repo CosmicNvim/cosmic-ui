@@ -20,28 +20,21 @@ If setup is not called, or a module is disabled, calls will warn and no-op.
 
 Use when you want to rename the symbol under cursor.
 
-### API: `require("cosmic-ui").rename.open(popup_opts?, opts?)`
+### API: `require("cosmic-ui").rename.open(opts?)`
 
 Opens the rename prompt at cursor, prefilled with the current symbol, then submits `textDocument/rename` to LSP clients that support rename.
-
-`popup_opts` definition:
-
-| Field | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `popup_opts` | `table\|nil` | No | `nil` | NUI popup options merged over module defaults before opening input. |
-| `popup_opts.position` | `table\|nil` | No | `{ row = 1, col = 0 }` | Cursor-relative popup position. |
-| `popup_opts.size` | `table\|nil` | No | auto width, `height = 2` | Popup size. Width grows to fit prompt + current symbol. |
-| `popup_opts.relative` | `string\|nil` | No | `"cursor"` | Popup anchor mode. |
-| `popup_opts.border` | `table\|nil` | No | from `rename.border` config | Border options for the input popup. |
+Invalid argument shapes raise an error.
+After submit, rename delegates to `vim.lsp.buf.rename` for native Neovim behavior.
 
 `opts` definition:
 
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `opts` | `table\|nil` | No | `nil` | NUI input options merged over module defaults. |
-| `opts.prompt` | `any\|nil` | No | `Text(prompt)` | Prompt content for the input. |
+| `opts` | `table\|nil` | No | `nil` | Rename UI options. |
+| `opts.prompt` | `string\|nil` | No | from `rename.prompt` config | Prompt content for the input. |
 | `opts.default_value` | `string\|nil` | No | current word under cursor | Initial value in rename input. |
 | `opts.on_submit` | `function\|nil` | No | built-in rename submit handler | Callback invoked with `new_name`. |
+| `opts.window` | `table\|nil` | No | internal defaults + `rename.border` config | Native float overrides. |
 
 ### Usage examples
 
@@ -52,10 +45,10 @@ end, { silent = true, desc = "Rename symbol" })
 ```
 
 ```lua
-require("cosmic-ui").rename.open(
-  { size = { width = 40, height = 2 } },
-  { default_value = "new_symbol_name" }
-)
+require("cosmic-ui").rename.open({
+  default_value = "new_symbol_name",
+  window = { width = 40 },
+})
 ```
 
 ## Codeactions

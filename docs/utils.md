@@ -9,7 +9,6 @@ Provides shared helper functions used across rename/code actions/formatters, plu
 - `merge(...) -> table`: Deep-merges tables using `vim.tbl_deep_extend("force", ...)`.
 - `get_relative_path(file_path) -> string`: Converts an absolute URI/path into a path relative to current working directory.
 - `index_of(tbl, item) -> integer|nil`: Returns the first list index matching `item`, or `nil` if not found.
-- `default_mappings(input)`: Applies default NUI input mappings for close and prompt-safe backspace behavior.
 - `Logger:log(msg, opts?)`: Emits an info notification using the configured notify title.
 - `Logger:warn(msg, opts?)`: Emits a warning notification using the configured notify title.
 - `Logger:error(msg, opts?)`: Emits an error notification using the configured notify title.
