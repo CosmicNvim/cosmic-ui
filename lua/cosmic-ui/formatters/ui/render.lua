@@ -86,7 +86,7 @@ M.render = function(ui, handlers, deps)
 
   table.insert(content_lines, '')
   max_content_width = math.max(max_content_width, vim.fn.strdisplaywidth(''))
-  table.insert(content_lines, '<tab>:toggle  s:switch scope  r:reset  a:toggle all  f:format  q:close')
+  table.insert(content_lines, '<tab>:toggle+next  s:switch scope  r:reset  a:toggle all  f:format  q:close')
   max_content_width = math.max(max_content_width, vim.fn.strdisplaywidth(content_lines[#content_lines]))
   ui.footer_lnum = #content_lines
 
