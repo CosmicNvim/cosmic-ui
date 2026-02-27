@@ -1,7 +1,7 @@
 # rename
 
-Rename UI wrapper for `cosmic-ui`.
-This module validates setup and module enable state, then forwards calls to `cosmic-ui.rename`.
+Rename UI module for `cosmic-ui`.
+This module validates setup and module enable state, then runs rename UI logic directly.
 
 ## Setup
 
@@ -62,7 +62,7 @@ Opens the rename input UI for the symbol under cursor.
 Behavior:
 - warns and no-ops if `setup()` has not run
 - warns and no-ops if `rename` is disabled
-- forwards to `require("cosmic-ui.rename")(popup_opts, opts)` when enabled
+- opens rename UI when enabled
 
 ```lua
 require("cosmic-ui").rename.open()

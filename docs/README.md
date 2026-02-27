@@ -7,6 +7,6 @@ This directory documents each Lua module in `lua/cosmic-ui`.
 - [`docs/utils.md`](docs/utils.md) - shared helpers and logger
 - [`docs/features.md`](docs/features.md) - combined docs for rename, codeactions, and formatters
 - [`docs/rename-handler.md`](docs/rename-handler.md) - LSP rename response handler
-- [`docs/modules-rename.md`](docs/modules-rename.md) - guarded public wrapper for rename
-- [`docs/modules-codeactions.md`](docs/modules-codeactions.md) - guarded public wrapper for code actions
-- [`docs/modules-formatters.md`](docs/modules-formatters.md) - guarded public wrapper for formatters
+- [`docs/rename.md`](docs/rename.md) - rename module API
+- [`docs/codeactions.md`](docs/codeactions.md) - code actions module API
+- [`docs/formatters.md`](docs/formatters.md) - formatters module API

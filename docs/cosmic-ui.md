@@ -33,15 +33,15 @@ Returns whether `setup()` has already been called.
 
 ### `rename`
 
-Lazy-loaded proxy to `require("cosmic-ui").rename` wrapper methods.
+Lazy-loaded proxy to `require("cosmic-ui").rename` module methods.
 
 ### `codeactions`
 
-Lazy-loaded proxy to `require("cosmic-ui").codeactions` wrapper methods.
+Lazy-loaded proxy to `require("cosmic-ui").codeactions` module methods.
 
 ### `formatters`
 
-Lazy-loaded proxy to `require("cosmic-ui").formatters` wrapper methods.
+Lazy-loaded proxy to `require("cosmic-ui").formatters` module methods.
 
 ## Usage
 

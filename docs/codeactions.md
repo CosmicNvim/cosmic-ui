@@ -1,7 +1,7 @@
 # codeactions
 
-Code actions wrapper for `cosmic-ui`.
-This module validates setup and module enable state, then forwards calls to `cosmic-ui.code-action`.
+Code actions module for `cosmic-ui`.
+This module validates setup/module enable state and runs code action requests directly.
 
 ## Setup
 
@@ -52,7 +52,7 @@ Requests and opens code actions at the current cursor context.
 Behavior:
 - warns and no-ops if `setup()` has not run
 - warns and no-ops if `codeactions` is disabled
-- forwards `opts` to `require("cosmic-ui.code-action").code_actions(opts)`
+- executes code action requests via the internal `cosmic-ui.codeactions` implementation
 - menu groups are ordered deterministically by client name (tie-break: client id)
 - actions within each client group keep server response order
 

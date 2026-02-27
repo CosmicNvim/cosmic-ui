@@ -3,7 +3,7 @@
 ## Intent
 
 Holds plugin configuration defaults, merged setup options, module enable/disable state, and warnings for invalid usage.
-This module is the gatekeeper used by wrapper modules before any feature runs.
+This module is the gatekeeper used by feature entry modules before any feature runs.
 
 ## Exposed API
 

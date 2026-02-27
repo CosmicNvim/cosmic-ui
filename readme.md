@@ -99,11 +99,11 @@ Notes:
 ### Feature modules
 
 - `rename`: Cursor-local rename input that dispatches LSP rename requests.  
-  Docs: [`docs/features.md#rename`](docs/features.md#rename)
+  Docs: [`docs/rename.md`](docs/rename.md)
 - `codeactions`: Aggregates LSP code actions for cursor/range and executes the selected action.  
-  Docs: [`docs/features.md#codeactions`](docs/features.md#codeactions)
+  Docs: [`docs/codeactions.md`](docs/codeactions.md)
 - `formatters`: Toggle and run Conform/LSP formatting with buffer/global scope control and per-item overrides.  
-  Docs: [`docs/features.md#formatters`](docs/features.md#formatters)
+  Docs: [`docs/formatters.md`](docs/formatters.md)
 
 ### Core modules
 
@@ -170,6 +170,6 @@ Formatting behavior:
 
 More usage examples:
 
-- Rename: [`docs/features.md#rename`](docs/features.md#rename)
-- Codeactions: [`docs/features.md#codeactions`](docs/features.md#codeactions)
-- Formatters: [`docs/features.md#formatters`](docs/features.md#formatters)
+- Rename: [`docs/rename.md`](docs/rename.md)
+- Codeactions: [`docs/codeactions.md`](docs/codeactions.md)
+- Formatters: [`docs/formatters.md`](docs/formatters.md)

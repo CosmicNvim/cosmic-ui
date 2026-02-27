@@ -1,7 +1,7 @@
 # formatters
 
-Formatter controls wrapper for `cosmic-ui`.
-This module validates setup and module enable state, then forwards calls to `cosmic-ui.formatters`.
+Formatter controls module for `cosmic-ui`.
+This module validates setup and module enable state, then executes formatter operations.
 
 ## Setup
 
@@ -73,7 +73,7 @@ All methods below:
 - warn and no-op if `setup()` has not run
 - warn and no-op if `formatters` is disabled
 - when `bufnr` is accepted, invalid/nonexistent handles warn and no-op
-- otherwise delegate to `require("cosmic-ui.formatters").<method>(opts)`
+- otherwise execute formatter operations immediately
 
 ### `require("cosmic-ui").formatters.open(opts?)`
 

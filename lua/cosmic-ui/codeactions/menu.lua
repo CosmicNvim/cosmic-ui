@@ -2,7 +2,7 @@ local Menu = require('nui.menu')
 local Text = require('nui.text')
 local event = require('nui.utils.autocmd').event
 local utils = require('cosmic-ui.utils')
-local transform = require('cosmic-ui.code-action.transform')
+local transform = require('cosmic-ui.codeactions.transform')
 local logger = utils.Logger
 
 local M = {}

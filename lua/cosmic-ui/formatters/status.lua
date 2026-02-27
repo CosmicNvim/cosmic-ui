@@ -1,6 +1,6 @@
 local normalize = require('cosmic-ui.formatters.normalize')
-local lsp_backend = require('cosmic-ui.formatters.backend_lsp')
-local conform_backend = require('cosmic-ui.formatters.backend_conform')
+local lsp_backend = require('cosmic-ui.formatters.backends.lsp')
+local conform_backend = require('cosmic-ui.formatters.backends.conform')
 
 local M = {}
 

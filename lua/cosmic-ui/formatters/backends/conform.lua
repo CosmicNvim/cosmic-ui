@@ -1,6 +1,6 @@
 local constants = require('cosmic-ui.formatters.constants')
 local state = require('cosmic-ui.formatters.state')
-local lsp_backend = require('cosmic-ui.formatters.backend_lsp')
+local lsp_backend = require('cosmic-ui.formatters.backends.lsp')
 local utils = require('cosmic-ui.utils')
 local logger = utils.Logger
 

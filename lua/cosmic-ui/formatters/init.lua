@@ -1,14 +1,19 @@
 local config = require('cosmic-ui.config')
+local guard = require('cosmic-ui.guard')
 local normalize = require('cosmic-ui.formatters.normalize')
 local state = require('cosmic-ui.formatters.state')
-local lsp_backend = require('cosmic-ui.formatters.backend_lsp')
-local conform_backend = require('cosmic-ui.formatters.backend_conform')
+local lsp_backend = require('cosmic-ui.formatters.backends.lsp')
+local conform_backend = require('cosmic-ui.formatters.backends.conform')
 local status = require('cosmic-ui.formatters.status')
-local ui = require('cosmic-ui.formatters.ui')
+local ui = require('cosmic-ui.formatters.ui.init')
 local utils = require('cosmic-ui.utils')
 local logger = utils.Logger
 
 local M = {}
+
+local function can_run(method_name)
+  return guard.can_run('formatters', method_name)
+end
 
 local function warn_once(msg)
   local global_opts = config.get() or {}
@@ -156,6 +161,10 @@ local function format_internal(opts, async)
 end
 
 M.open = function(opts)
+  if not can_run('formatters.open(...)') then
+    return
+  end
+
   return ui.open(opts, {
     resolve_scope = normalize.resolve_scope,
     resolve_bufnr = normalize.resolve_bufnr,
@@ -166,6 +175,10 @@ M.open = function(opts)
 end
 
 M.toggle = function(opts)
+  if not can_run('formatters.toggle(...)') then
+    return
+  end
+
   mutate_backends(opts, function(backend, scope, bufnr)
     local current = state.get_effective_backend_state(backend, scope, bufnr)
     state.set_backend_state(backend, scope, bufnr, not current)
@@ -173,18 +186,30 @@ M.toggle = function(opts)
 end
 
 M.enable = function(opts)
+  if not can_run('formatters.enable(...)') then
+    return
+  end
+
   mutate_backends(opts, function(backend, scope, bufnr)
     state.set_backend_state(backend, scope, bufnr, true)
   end, 'enable')
 end
 
 M.disable = function(opts)
+  if not can_run('formatters.disable(...)') then
+    return
+  end
+
   mutate_backends(opts, function(backend, scope, bufnr)
     state.set_backend_state(backend, scope, bufnr, false)
   end, 'disable')
 end
 
 M.toggle_item = function(opts)
+  if not can_run('formatters.toggle_item(...)') then
+    return
+  end
+
   mutate_item(opts, function(item)
     local current = state.get_effective_item_state(item.source, item.name, item.scope, item.bufnr)
     state.set_item_state(item.source, item.name, item.scope, item.bufnr, not current)
@@ -192,18 +217,30 @@ M.toggle_item = function(opts)
 end
 
 M.enable_item = function(opts)
+  if not can_run('formatters.enable_item(...)') then
+    return
+  end
+
   mutate_item(opts, function(item)
     state.set_item_state(item.source, item.name, item.scope, item.bufnr, true)
   end, 'enable_item')
 end
 
 M.disable_item = function(opts)
+  if not can_run('formatters.disable_item(...)') then
+    return
+  end
+
   mutate_item(opts, function(item)
     state.set_item_state(item.source, item.name, item.scope, item.bufnr, false)
   end, 'disable_item')
 end
 
 M.is_item_enabled = function(opts)
+  if not can_run('formatters.is_item_enabled(...)') then
+    return
+  end
+
   local normalized = normalize.normalize_item_opts(opts)
   if not normalized then
     return
@@ -213,6 +250,10 @@ M.is_item_enabled = function(opts)
 end
 
 M.reset = function(opts)
+  if not can_run('formatters.reset(...)') then
+    return
+  end
+
   opts = opts or {}
 
   local scope = normalize.resolve_scope(opts.scope)
@@ -271,6 +312,10 @@ M.reset = function(opts)
 end
 
 M.is_enabled = function(opts)
+  if not can_run('formatters.is_enabled(...)') then
+    return
+  end
+
   opts = opts or {}
 
   local scope = normalize.resolve_scope(opts.scope)
@@ -301,14 +346,26 @@ M.is_enabled = function(opts)
 end
 
 M.status = function(opts)
+  if not can_run('formatters.status(...)') then
+    return
+  end
+
   return status.get(opts)
 end
 
 M.format = function(opts)
+  if not can_run('formatters.format(...)') then
+    return
+  end
+
   return format_internal(opts, false)
 end
 
 M.format_async = function(opts)
+  if not can_run('formatters.format_async(...)') then
+    return
+  end
+
   return format_internal(opts, true)
 end
 

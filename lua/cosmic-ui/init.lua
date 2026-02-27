@@ -1,9 +1,9 @@
 local config = require('cosmic-ui.config')
 
 local module_map = {
-  rename = 'cosmic-ui.modules.rename',
-  codeactions = 'cosmic-ui.modules.codeactions',
-  formatters = 'cosmic-ui.modules.formatters',
+  rename = 'cosmic-ui.rename',
+  codeactions = 'cosmic-ui.codeactions',
+  formatters = 'cosmic-ui.formatters',
 }
 
 local M = {
