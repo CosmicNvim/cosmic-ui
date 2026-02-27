@@ -28,6 +28,10 @@ M.open = function(opts, handlers)
   end
 
   local bufnr = handlers.resolve_bufnr(opts.bufnr)
+  if not bufnr then
+    return
+  end
+
   local buf = window.create_scratch_buf({
     filetype = 'cosmicui-formatters',
     modifiable = false,

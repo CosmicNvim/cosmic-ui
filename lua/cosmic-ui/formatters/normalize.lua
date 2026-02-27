@@ -17,10 +17,33 @@ M.resolve_scope = function(scope)
 end
 
 M.resolve_bufnr = function(bufnr)
-  local resolved = bufnr or 0
-  if resolved == 0 then
+  local resolved = bufnr
+  if resolved == nil or resolved == 0 then
     resolved = vim.api.nvim_get_current_buf()
   end
+
+  if type(resolved) ~= 'number' then
+    logger:warn(
+      ('Invalid formatter bufnr type `%s`; expected an integer buffer handle.'):format(type(resolved))
+    )
+    return nil
+  end
+
+  if resolved ~= math.floor(resolved) then
+    logger:warn(('Invalid formatter bufnr `%s`; expected an integer buffer handle.'):format(tostring(resolved)))
+    return nil
+  end
+
+  if resolved < 1 then
+    logger:warn(('Invalid formatter bufnr `%s`; expected a valid buffer handle.'):format(tostring(resolved)))
+    return nil
+  end
+
+  if not vim.api.nvim_buf_is_valid(resolved) then
+    logger:warn(('Invalid formatter bufnr `%s`; buffer is not valid.'):format(tostring(resolved)))
+    return nil
+  end
+
   return resolved
 end
 
@@ -94,6 +117,10 @@ M.normalize_scope_backends_bufnr = function(opts)
   end
 
   local bufnr = M.resolve_bufnr(opts.bufnr)
+  if not bufnr then
+    return nil
+  end
+
   return {
     scope = scope,
     backends = backends,
@@ -119,11 +146,16 @@ M.normalize_item_opts = function(opts)
     return nil
   end
 
+  local bufnr = M.resolve_bufnr(opts.bufnr)
+  if not bufnr then
+    return nil
+  end
+
   return {
     scope = scope,
     source = source,
     name = name,
-    bufnr = M.resolve_bufnr(opts.bufnr),
+    bufnr = bufnr,
   }
 end
 

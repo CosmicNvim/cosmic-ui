@@ -19,15 +19,18 @@ M.range = function(opts)
     return
   end
 
-  local bufnr = 0
-  local start_pos = vim.api.nvim_buf_get_mark(bufnr, '<')
-  local end_pos = vim.api.nvim_buf_get_mark(bufnr, '>')
-  opts = utils.merge({
-    range = {
-      start = { start_pos[1], start_pos[2] },
-      ['end'] = { end_pos[1], end_pos[2] },
-    },
-  }, opts or {})
+  opts = opts or {}
+  if not opts.range and not opts.params then
+    local bufnr = 0
+    local start_pos = vim.api.nvim_buf_get_mark(bufnr, '<')
+    local end_pos = vim.api.nvim_buf_get_mark(bufnr, '>')
+    opts = utils.merge({
+      range = {
+        start = { start_pos[1], start_pos[2] },
+        ['end'] = { end_pos[1], end_pos[2] },
+      },
+    }, opts)
+  end
 
   return require('cosmic-ui.code-action').code_actions(opts)
 end

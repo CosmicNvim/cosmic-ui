@@ -72,6 +72,7 @@ formatters = {
 All methods below:
 - warn and no-op if `setup()` has not run
 - warn and no-op if `formatters` is disabled
+- when `bufnr` is accepted, invalid/nonexistent handles warn and no-op
 - otherwise delegate to `require("cosmic-ui.formatters").<method>(opts)`
 
 ### `require("cosmic-ui").formatters.open(opts?)`

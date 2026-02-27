@@ -13,6 +13,20 @@ local state = {
   buffers = {},
 }
 
+local function ensure_buffer_cleanup_autocmds()
+  local group = vim.api.nvim_create_augroup('CosmicUiFormattersStateCleanup', { clear = true })
+  vim.api.nvim_create_autocmd({ 'BufDelete', 'BufWipeout' }, {
+    group = group,
+    desc = 'CosmicUI formatter buffer state cleanup',
+    callback = function(args)
+      local bufnr = args and args.buf or nil
+      if bufnr ~= nil then
+        state.buffers[bufnr] = nil
+      end
+    end,
+  })
+end
+
 local function has_entries(tbl)
   return type(tbl) == 'table' and next(tbl) ~= nil
 end
@@ -179,5 +193,7 @@ M.current_buffer_has_backend_override = function(backends, bufnr)
 
   return false
 end
+
+ensure_buffer_cleanup_autocmds()
 
 return M

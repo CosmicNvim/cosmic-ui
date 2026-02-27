@@ -77,6 +77,10 @@ local function format_internal(opts, async)
   end
 
   local bufnr = normalize.resolve_bufnr(opts.bufnr)
+  if not bufnr then
+    return
+  end
+
   local requested = normalize.normalize_backends(opts.backend)
   if not requested then
     return
@@ -217,6 +221,9 @@ M.reset = function(opts)
   end
 
   local bufnr = normalize.resolve_bufnr(opts.bufnr)
+  if not bufnr then
+    return
+  end
 
   if opts.source ~= nil then
     local source = normalize.normalize_source(opts.source)
@@ -272,6 +279,10 @@ M.is_enabled = function(opts)
   end
 
   local bufnr = normalize.resolve_bufnr(opts.bufnr)
+  if not bufnr then
+    return
+  end
+
   if opts.backend ~= nil then
     local backends = normalize.normalize_backends(opts.backend)
     if not backends then

@@ -53,6 +53,8 @@ Behavior:
 - warns and no-ops if `setup()` has not run
 - warns and no-ops if `codeactions` is disabled
 - forwards `opts` to `require("cosmic-ui.code-action").code_actions(opts)`
+- menu groups are ordered deterministically by client name (tie-break: client id)
+- actions within each client group keep server response order
 
 ```lua
 require("cosmic-ui").codeactions.open()
@@ -69,8 +71,9 @@ require("cosmic-ui").codeactions.open({
 Requests code actions for the active visual selection.
 
 Behavior:
-- builds a default range from visual marks `'<` and `'>`
-- merges user `opts` over that default range
+- uses `opts.range` when provided
+- else uses `opts.params` when provided
+- else builds range from visual marks `'<` and `'>`
 - warns and no-ops if `setup()` has not run or module is disabled
 
 ```lua

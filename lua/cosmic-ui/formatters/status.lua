@@ -13,6 +13,9 @@ M.get = function(opts)
   end
 
   local bufnr = normalize.resolve_bufnr(opts.bufnr)
+  if not bufnr then
+    return
+  end
 
   local lsp_state, lsp_enabled = lsp_backend.lsp_backend_state(scope, bufnr)
   local conform_state, conform_enabled = conform_backend.conform_backend_state(scope, bufnr)

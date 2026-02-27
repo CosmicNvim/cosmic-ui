@@ -80,6 +80,8 @@ Behavior:
 - If `opts.range` is present, range params are built from it.
 - Else if `opts.params` is present, `opts.params` is used directly.
 - Else cursor-based range params are created automatically.
+- Code action menu groups are ordered deterministically by client name (tie-break: client id).
+- Action order within each client group follows server response order.
 
 ### API: `require("cosmic-ui").codeactions.range(opts?)`
 
@@ -89,13 +91,14 @@ Fetches and displays code actions for the active visual selection.
 
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `opts` | `table\|nil` | No | `{}` | Extra options merged into visual-range request opts. |
+| `opts` | `table\|nil` | No | `{}` | Optional code action request input. |
 | `opts.params` | `table\|nil` | No | `nil` | Optional explicit params override. |
-| `opts.range` | `table\|nil` | No | visual selection range | Optional range override. |
+| `opts.range` | `table\|nil` | No | `nil` | Optional range override. |
 
 Behavior:
-- Wrapper builds `range` from `'<` and `'>` marks.
-- User `opts` are merged on top, so user-provided `opts.range` can override the visual range.
+- Uses `opts.range` when provided.
+- Else uses `opts.params` when provided.
+- Else builds `range` from `'<` and `'>` marks.
 
 ### Usage examples
 
@@ -126,6 +129,7 @@ Use when you want to:
 - run formatting with current toggle state
 
 All methods below are called via `require("cosmic-ui").formatters.<method>(opts)`.
+For methods that accept `bufnr`, invalid/nonexistent buffer handles warn and no-op.
 
 ### API: `open(opts?)`
 
