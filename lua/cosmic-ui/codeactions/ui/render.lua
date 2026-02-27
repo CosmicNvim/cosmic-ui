@@ -71,10 +71,20 @@ M.render = function(ui)
       action_line_by_idx[action_idx] = line_no
       line_meta[line_no] = { kind = 'action', action_idx = action_idx }
     else
+      local label_start = (label_start_col or 0) + 1 -- account for left padding space
+      local label_end = (label_end_col or 0) + 1
+      local name_start = label_start
+      local name_end = label_end
+
+      if vim.startswith(row.text, '(') and row.text:sub(-1) == ')' then
+        name_start = label_start + 1
+        name_end = label_end - 1
+      end
+
       line_meta[line_no] = {
         kind = 'separator',
-        label_start_col = (label_start_col or 0) + 1, -- account for left padding space
-        label_end_col = (label_end_col or 0) + 1,
+        name_start_col = name_start,
+        name_end_col = name_end,
       }
     end
   end
@@ -93,7 +103,9 @@ M.render = function(ui)
   for line_no, meta in pairs(line_meta) do
     if meta.kind == 'separator' then
       vim.api.nvim_buf_add_highlight(ui.buf, ns, separator_hl, line_no - 1, 0, -1)
-      vim.api.nvim_buf_add_highlight(ui.buf, ns, 'Comment', line_no - 1, meta.label_start_col, meta.label_end_col)
+      if meta.name_end_col > meta.name_start_col then
+        vim.api.nvim_buf_add_highlight(ui.buf, ns, 'Comment', line_no - 1, meta.name_start_col, meta.name_end_col)
+      end
     end
   end
 
