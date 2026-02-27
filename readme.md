@@ -34,7 +34,6 @@ Cosmic-UI is a simple wrapper around specific vim functionality. Built in order 
   use({
     'CosmicNvim/cosmic-ui',
     requires = {
-      'MunifTanjim/nui.nvim',
       'nvim-lua/plenary.nvim',
       'nvim-tree/nvim-web-devicons',
     },

@@ -2,7 +2,7 @@ local utils = require('cosmic-ui.utils')
 local config = require('cosmic-ui.config')
 local guard = require('cosmic-ui.guard')
 local request = require('cosmic-ui.codeactions.request')
-local menu = require('cosmic-ui.codeactions.menu')
+local ui = require('cosmic-ui.codeactions.ui')
 local logger = utils.Logger
 
 local M = {}
@@ -23,7 +23,7 @@ local function run_code_actions(opts)
     clients = clients,
     user_opts = opts,
     on_complete = function(results_lsp)
-      menu.open(results_lsp, user_opts)
+      ui.open(results_lsp, user_opts)
     end,
   })
 end

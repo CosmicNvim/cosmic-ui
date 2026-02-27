@@ -73,6 +73,7 @@ Behavior:
 - If `opts.range` is present, range params are built from it.
 - Else if `opts.params` is present, `opts.params` is used directly.
 - Else cursor-based range params are created automatically.
+- Uses a native floating menu UI.
 - Code action menu groups are ordered deterministically by client name (tie-break: client id).
 - Action order within each client group follows server response order.
 
