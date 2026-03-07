@@ -20,6 +20,7 @@ Initializes cosmic-ui config state and stores merged module options.
 | `rename.enabled` | `boolean\|nil` | No | `true` when table exists | Explicit enable/disable switch for rename module. |
 | `codeactions` | `table\|nil` | No | disabled if omitted | Codeactions module config; set table to enable module. |
 | `codeactions.enabled` | `boolean\|nil` | No | `true` when table exists | Explicit enable/disable switch for codeactions module. |
+| `codeactions.auto_apply_if_single` | `boolean\|nil` | No | `false` | Auto-execute when exactly one code action is available. |
 | `formatters` | `table\|nil` | No | disabled if omitted | Formatters module config; set table to enable module. |
 | `formatters.enabled` | `boolean\|nil` | No | `true` when table exists | Explicit enable/disable switch for formatters module. |
 

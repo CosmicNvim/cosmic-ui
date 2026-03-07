@@ -71,6 +71,7 @@ You may override any of the settings below by passing a config object to `.setup
   codeactions = {
     enabled = true, -- optional (defaults to true when table exists)
     min_width = nil,
+    auto_apply_if_single = false, -- auto-execute when only one action is available
     border = {
       bottom_hl = 'FloatBorder',
       highlight = 'FloatBorder',

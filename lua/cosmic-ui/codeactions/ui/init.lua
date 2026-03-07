@@ -66,6 +66,11 @@ M.open = function(results_lsp, user_opts)
     return
   end
 
+  if user_opts.auto_apply_if_single and #built.actions == 1 then
+    submit_action(built.actions[1])
+    return
+  end
+
   local border = user_opts.border or {}
   local border_style = border.style or vim.o.winborder
   if border_style == '' then

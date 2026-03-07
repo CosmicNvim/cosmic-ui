@@ -74,6 +74,7 @@ Behavior:
 - Else if `opts.params` is present, `opts.params` is used directly.
 - Else cursor-based range params are created automatically.
 - Uses a native floating menu UI.
+- Can auto-apply a lone action when `codeactions.auto_apply_if_single = true`.
 - Code action menu groups are ordered deterministically by client name (tie-break: client id).
 - Action order within each client group follows server response order.
 

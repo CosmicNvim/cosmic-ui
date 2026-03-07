@@ -19,6 +19,7 @@ require("cosmic-ui").setup({
 codeactions = {
   enabled = true,
   min_width = nil,
+  auto_apply_if_single = false,
   border = {
     bottom_hl = "FloatBorder",
     highlight = "FloatBorder",
@@ -54,6 +55,7 @@ Behavior:
 - warns and no-ops if `codeactions` is disabled
 - executes code action requests via the internal `cosmic-ui.codeactions` implementation
 - opens a native floating menu (no NUI dependency)
+- when `auto_apply_if_single = true`, auto-executes without opening the menu if exactly one action is available
 - menu groups are ordered deterministically by client name (tie-break: client id)
 - actions within each client group keep server response order
 - group headers are centered and rendered as bordered divider lines
