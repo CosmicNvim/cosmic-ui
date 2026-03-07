@@ -4,6 +4,7 @@ local module_map = {
   rename = 'cosmic-ui.rename',
   codeactions = 'cosmic-ui.codeactions',
   formatters = 'cosmic-ui.formatters',
+  diagnostics = 'cosmic-ui.diagnostics',
 }
 
 local M = {

@@ -23,6 +23,17 @@ local defaults = {
     },
   },
   formatters = {},
+  diagnostics = {
+    scope = 'buffer',
+    max_items = 300,
+    min_width = nil,
+    border = {
+      highlight = 'FloatBorder',
+      title = 'Diagnostics',
+      title_align = 'center',
+      title_hl = 'FloatBorder',
+    },
+  },
 }
 
 local known_top_level_keys = {
@@ -30,6 +41,7 @@ local known_top_level_keys = {
   rename = true,
   codeactions = true,
   formatters = true,
+  diagnostics = true,
 }
 
 local state = {
@@ -76,6 +88,7 @@ M.setup = function(user_opts)
     rename = defaults.rename,
     codeactions = defaults.codeactions,
     formatters = defaults.formatters,
+    diagnostics = defaults.diagnostics,
   }) do
     local module_user_opts = user_opts[module_name]
     if type(module_user_opts) == 'table' then

@@ -17,6 +17,7 @@ Cosmic-UI is a simple wrapper around specific vim functionality. Built in order 
 - Rename floating popup & file change notification
 - Code Actions
 - Formatter toggles (LSP + Conform.nvim)
+- Diagnostics picker + location-list export
 
 ## 📷 Screenshots
 
@@ -84,6 +85,20 @@ You may override any of the settings below by passing a config object to `.setup
   formatters = {
     enabled = true, -- optional (defaults to true when table exists)
   },
+
+  diagnostics = {
+    enabled = true, -- optional (defaults to true when table exists)
+    scope = "buffer", -- "buffer" or "workspace"
+    max_items = 300,
+    min_width = nil,
+    border = {
+      highlight = "FloatBorder",
+      style = nil, -- falls back to vim.o.winborder
+      title = "Diagnostics",
+      title_align = "center",
+      title_hl = "FloatBorder",
+    },
+  },
 }
 ```
 
@@ -103,6 +118,8 @@ Notes:
   Docs: [`docs/codeactions.md`](docs/codeactions.md)
 - `formatters`: Toggle and run Conform/LSP formatting with buffer/global scope control and per-item overrides.  
   Docs: [`docs/formatters.md`](docs/formatters.md)
+- `diagnostics`: Open a floating diagnostics picker and export diagnostics to the location list.  
+  Docs: [`docs/diagnostics.md`](docs/diagnostics.md)
 
 ### Core modules
 
@@ -121,6 +138,7 @@ CosmicUI.setup({
   rename = {},
   codeactions = {},
   formatters = {},
+  diagnostics = {},
 })
 ```
 
@@ -160,6 +178,18 @@ vim.keymap.set("n", "<leader>fm", function()
 end, { silent = true, desc = "Format buffer" })
 ```
 
+### Diagnostics
+
+```lua
+vim.keymap.set("n", "<leader>gd", function()
+  require("cosmic-ui").diagnostics.open()
+end, { silent = true, desc = "Diagnostics (buffer)" })
+
+vim.keymap.set("n", "<leader>gD", function()
+  require("cosmic-ui").diagnostics.setloclist({ scope = "workspace" })
+end, { silent = true, desc = "Diagnostics to loclist" })
+```
+
 Formatting behavior:
 - If Conform.nvim is installed and conform backend is enabled, `format()` uses Conform.
 - If Conform.nvim is unavailable (or conform backend is disabled), `format()` falls back to LSP when LSP backend is enabled.
@@ -172,3 +202,4 @@ More usage examples:
 - Rename: [`docs/rename.md`](docs/rename.md)
 - Codeactions: [`docs/codeactions.md`](docs/codeactions.md)
 - Formatters: [`docs/formatters.md`](docs/formatters.md)
+- Diagnostics: [`docs/diagnostics.md`](docs/diagnostics.md)

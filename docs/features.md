@@ -1,6 +1,6 @@
-# Rename, Codeactions, and Formatters
+# Rename, Codeactions, Formatters, and Diagnostics
 
-This file explains how to use the three feature modules exposed through `require("cosmic-ui")`.
+This file explains how to use the feature modules exposed through `require("cosmic-ui")`.
 
 ## Prerequisites
 
@@ -11,6 +11,7 @@ require("cosmic-ui").setup({
   rename = {},
   codeactions = {},
   formatters = {},
+  diagnostics = {},
 })
 ```
 
@@ -218,6 +219,7 @@ Returns:
   - `source` (effective source: `requested`, `specific`, `global`, `default`, `clamped`)
   - `configured_source` (pre-clamp source: `requested`, `specific`, `global`, `default`)
   - `uses_lsp` (`boolean`)
+
   - `eligible_clients` / `total_clients`
   - `reason` (for example: `conform unavailable`, `lsp backend disabled`, `no eligible lsp clients`)
 - Each `lsp_clients[]` entry includes `conform_fallback`:
@@ -336,3 +338,41 @@ require("conform").setup({
 Note:
 - This controls Conform formatting only.
 - LSP code actions on save (for example `source.fixAll.eslint`) are separate and must be configured independently.
+
+## Diagnostics
+
+Use when you want to quickly review and navigate diagnostics for the current buffer or entire workspace.
+
+### API: `require("cosmic-ui").diagnostics.open(opts?)`
+
+Opens a floating diagnostics picker.
+
+`opts` definition:
+
+| Field | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `opts` | `table\|nil` | No | `{}` | Optional diagnostics query options. |
+| `opts.scope` | `"buffer"\|"workspace"\|nil` | No | from `diagnostics.scope` config (`"buffer"`) | Scope to query diagnostics from. |
+| `opts.bufnr` | `integer\|nil` | No | current buffer (`0`) | Buffer queried when `scope = "buffer"`. |
+| `opts.severity` | `integer\|"error"\|"warn"\|"info"\|"hint"\|nil` | No | `nil` | Optional severity filter. |
+| `opts.max_items` | `integer\|nil` | No | from `diagnostics.max_items` config | Max diagnostics rendered. |
+
+Behavior:
+- Uses sorted diagnostics (severity then location).
+- Keymaps in picker: `q`/`<Esc>` close, `r` refresh, `<CR>` jump.
+
+### API: `require("cosmic-ui").diagnostics.setloclist(opts?)`
+
+Builds current window location-list entries from diagnostics and opens `:lopen` when entries exist.
+
+### Usage examples
+
+```lua
+vim.keymap.set("n", "<leader>gd", function()
+  require("cosmic-ui").diagnostics.open()
+end, { silent = true, desc = "Diagnostics" })
+
+vim.keymap.set("n", "<leader>gD", function()
+  require("cosmic-ui").diagnostics.setloclist({ scope = "workspace" })
+end, { silent = true, desc = "Diagnostics loclist" })
+```

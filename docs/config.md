@@ -25,6 +25,7 @@ config.setup({
   rename = { enabled = true },
   codeactions = { enabled = true },
   formatters = { enabled = true },
+  diagnostics = { enabled = true },
 })
 ```
 

@@ -3,7 +3,7 @@
 ## Intent
 
 Root plugin module that users require (`require("cosmic-ui")`).
-It stores setup state indirectly via `cosmic-ui.config` and lazily loads feature modules (`rename`, `codeactions`, `formatters`) on first access.
+It stores setup state indirectly via `cosmic-ui.config` and lazily loads feature modules (`rename`, `codeactions`, `formatters`, `diagnostics`) on first access.
 
 ## Exposed API
 
@@ -22,9 +22,11 @@ Initializes cosmic-ui config state and stores merged module options.
 | `codeactions.enabled` | `boolean\|nil` | No | `true` when table exists | Explicit enable/disable switch for codeactions module. |
 | `formatters` | `table\|nil` | No | disabled if omitted | Formatters module config; set table to enable module. |
 | `formatters.enabled` | `boolean\|nil` | No | `true` when table exists | Explicit enable/disable switch for formatters module. |
+| `diagnostics` | `table\|nil` | No | disabled if omitted | Diagnostics module config; set table to enable module. |
+| `diagnostics.enabled` | `boolean\|nil` | No | `true` when table exists | Explicit enable/disable switch for diagnostics module. |
 
 Module enable semantics:
-- Missing module key (`rename`, `codeactions`, `formatters`) means disabled.
+- Missing module key (`rename`, `codeactions`, `formatters`, `diagnostics`) means disabled.
 - `enabled = false` inside a module table disables that module.
 
 ### `is_setup() -> boolean`
@@ -43,6 +45,10 @@ Lazy-loaded proxy to `require("cosmic-ui").codeactions` module methods.
 
 Lazy-loaded proxy to `require("cosmic-ui").formatters` module methods.
 
+### `diagnostics`
+
+Lazy-loaded proxy to `require("cosmic-ui").diagnostics` module methods.
+
 ## Usage
 
 ```lua
@@ -52,6 +58,7 @@ CosmicUI.setup({
   rename = {},
   codeactions = {},
   formatters = {},
+  diagnostics = {},
 })
 ```
 
