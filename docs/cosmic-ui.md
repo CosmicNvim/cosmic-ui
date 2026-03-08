@@ -58,5 +58,6 @@ CosmicUI.setup({
 ```lua
 if require("cosmic-ui").is_setup() then
   require("cosmic-ui").codeactions.open()
+  require("cosmic-ui").codeactions.repeat_last()
 end
 ```

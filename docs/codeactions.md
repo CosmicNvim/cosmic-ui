@@ -91,3 +91,26 @@ require("cosmic-ui").codeactions.range({
   range = { start = { 10, 0 }, ["end"] = { 12, 0 } },
 })
 ```
+
+### `require("cosmic-ui").codeactions.repeat_last(opts?)`
+
+Requests code actions for the current context and re-executes the last action selected through CosmicUI.
+
+Behavior:
+- warns and no-ops if `setup()` has not run or module is disabled
+- warns when there is no previously selected code action to repeat
+- uses request precedence `opts.range` > `opts.params` > cursor range
+- matches by action `title` + `kind`, preferring the same client when available
+- warns when the previous action does not exist in the current context
+
+```lua
+vim.keymap.set("n", "<leader>gA", function()
+  require("cosmic-ui").codeactions.repeat_last()
+end)
+```
+
+```lua
+require("cosmic-ui").codeactions.repeat_last({
+  params = { context = { only = { "quickfix" } } },
+})
+```

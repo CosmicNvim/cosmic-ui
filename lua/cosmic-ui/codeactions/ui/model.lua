@@ -42,6 +42,8 @@ M.build = function(results_lsp)
         local action = {
           kind = 'action',
           text = command_title,
+          title = result.title or '',
+          action_kind = result.kind,
           client = client,
           command = result,
         }

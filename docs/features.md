@@ -94,6 +94,23 @@ Behavior:
 - Else uses `opts.params` when provided.
 - Else builds `range` from `'<` and `'>` marks.
 
+### API: `require("cosmic-ui").codeactions.repeat_last(opts?)`
+
+Re-runs the last code action you applied through CosmicUI in the current context.
+
+`opts` definition:
+
+| Field | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `opts` | `table\|nil` | No | `{}` | Optional code action request input. |
+| `opts.params` | `table\|nil` | No | `nil` | Optional explicit params override. |
+| `opts.range` | `table\|nil` | No | `nil` | Optional range override. |
+
+Behavior:
+- Uses the same request precedence as `open` (`range` > `params` > cursor range).
+- Matches by action title + kind, preferring the same LSP client when available.
+- Warns if no previous action exists or no matching action is available in the current context.
+
 ### Usage examples
 
 ```lua
@@ -104,6 +121,10 @@ end, { silent = true, desc = "Code actions" })
 vim.keymap.set("v", "<leader>ga", function()
   require("cosmic-ui").codeactions.range()
 end, { silent = true, desc = "Range code actions" })
+
+vim.keymap.set("n", "<leader>gA", function()
+  require("cosmic-ui").codeactions.repeat_last()
+end, { silent = true, desc = "Repeat last code action" })
 ```
 
 ### Optional advanced opts

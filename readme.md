@@ -99,7 +99,7 @@ Notes:
 
 - `rename`: Cursor-local rename input that dispatches LSP rename requests.  
   Docs: [`docs/rename.md`](docs/rename.md)
-- `codeactions`: Aggregates LSP code actions for cursor/range and executes the selected action.  
+- `codeactions`: Aggregates LSP code actions for cursor/range, executes selections, and can repeat your last applied action.  
   Docs: [`docs/codeactions.md`](docs/codeactions.md)
 - `formatters`: Toggle and run Conform/LSP formatting with buffer/global scope control and per-item overrides.  
   Docs: [`docs/formatters.md`](docs/formatters.md)
@@ -142,6 +142,10 @@ end, { silent = true, desc = "Code actions" })
 vim.keymap.set("v", "<leader>ga", function()
   require("cosmic-ui").codeactions.range()
 end, { silent = true, desc = "Range code actions" })
+
+vim.keymap.set("n", "<leader>gA", function()
+  require("cosmic-ui").codeactions.repeat_last()
+end, { silent = true, desc = "Repeat last code action" })
 ```
 
 ### Formatters
