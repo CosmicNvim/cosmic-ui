@@ -1,6 +1,6 @@
 local utils = require('cosmic-ui.utils')
 local window = require('cosmic-ui.window')
-local transform = require('cosmic-ui.codeactions.transform')
+local execute = require('cosmic-ui.codeactions.execute')
 local lifecycle = require('cosmic-ui.codeactions.ui.lifecycle')
 local model = require('cosmic-ui.codeactions.ui.model')
 local render = require('cosmic-ui.codeactions.ui.render')
@@ -23,33 +23,7 @@ local function compute_height(row_count)
 end
 
 local function submit_action(action)
-  local client = action.client
-  local command = action.command
-
-  if not client then
-    logger:warn('Code action client is no longer available')
-    return
-  end
-
-  if not command.edit and transform.supports_code_action_resolve(client) then
-    client:request('codeAction/resolve', command, function(resolved_err, resolved_action)
-      if resolved_err then
-        local code = resolved_err.code or 'unknown'
-        local msg = resolved_err.message or vim.inspect(resolved_err)
-        logger:error(code .. ': ' .. msg)
-        return
-      end
-
-      if resolved_action then
-        transform.execute_action(transform.transform_action(resolved_action), client)
-      else
-        transform.execute_action(transform.transform_action(command), client)
-      end
-    end)
-    return
-  end
-
-  transform.execute_action(transform.transform_action(command), client)
+  execute.execute(action.command, action.client)
 end
 
 M.open = function(results_lsp, user_opts)

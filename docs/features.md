@@ -74,6 +74,7 @@ Behavior:
 - Else if `opts.params` is present, `opts.params` is used directly.
 - Else cursor-based range params are created automatically.
 - Uses a native floating menu UI.
+- If `codeactions.auto_apply_preferred_if_single = true`, one preferred action is auto-applied instead of opening the menu.
 - Code action menu groups are ordered deterministically by client name (tie-break: client id).
 - Action order within each client group follows server response order.
 
@@ -94,6 +95,25 @@ Behavior:
 - Else uses `opts.params` when provided.
 - Else builds `range` from `'<` and `'>` marks.
 
+### API: `require("cosmic-ui").codeactions.preferred(opts?)`
+
+Fetches code actions at cursor and applies the preferred action when exactly one preferred action exists.
+
+`opts` definition:
+
+| Field | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `opts` | `table\|nil` | No | `{}` | Optional code action request input. |
+| `opts.params` | `table\|nil` | No | `nil` | Optional explicit params override. |
+| `opts.range` | `table\|nil` | No | `nil` | Optional range override. |
+| `opts.fallback_to_menu` | `boolean\|nil` | No | `true` | Open menu when preferred action is missing/ambiguous. |
+
+Behavior:
+- If exactly one preferred action exists, it is applied immediately.
+- If zero or multiple preferred actions exist:
+  - menu opens by default
+  - warning-only when `fallback_to_menu = false`.
+
 ### Usage examples
 
 ```lua
@@ -104,6 +124,10 @@ end, { silent = true, desc = "Code actions" })
 vim.keymap.set("v", "<leader>ga", function()
   require("cosmic-ui").codeactions.range()
 end, { silent = true, desc = "Range code actions" })
+
+vim.keymap.set("n", "<leader>gA", function()
+  require("cosmic-ui").codeactions.preferred()
+end, { silent = true, desc = "Preferred code action" })
 ```
 
 ### Optional advanced opts

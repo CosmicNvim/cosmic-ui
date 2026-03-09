@@ -16,6 +16,7 @@ Cosmic-UI is a simple wrapper around specific vim functionality. Built in order 
 
 - Rename floating popup & file change notification
 - Code Actions
+- Preferred code action quick-apply
 - Formatter toggles (LSP + Conform.nvim)
 
 ## 📷 Screenshots
@@ -71,6 +72,7 @@ You may override any of the settings below by passing a config object to `.setup
   codeactions = {
     enabled = true, -- optional (defaults to true when table exists)
     min_width = nil,
+    auto_apply_preferred_if_single = false,
     border = {
       bottom_hl = 'FloatBorder',
       highlight = 'FloatBorder',
@@ -142,6 +144,10 @@ end, { silent = true, desc = "Code actions" })
 vim.keymap.set("v", "<leader>ga", function()
   require("cosmic-ui").codeactions.range()
 end, { silent = true, desc = "Range code actions" })
+
+vim.keymap.set("n", "<leader>gA", function()
+  require("cosmic-ui").codeactions.preferred()
+end, { silent = true, desc = "Preferred code action" })
 ```
 
 ### Formatters

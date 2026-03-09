@@ -14,6 +14,7 @@ local defaults = {
   },
   codeactions = {
     min_width = nil,
+    auto_apply_preferred_if_single = false,
     border = {
       bottom_hl = 'FloatBorder',
       highlight = 'FloatBorder',

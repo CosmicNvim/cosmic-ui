@@ -19,6 +19,7 @@ require("cosmic-ui").setup({
 codeactions = {
   enabled = true,
   min_width = nil,
+  auto_apply_preferred_if_single = false,
   border = {
     bottom_hl = "FloatBorder",
     highlight = "FloatBorder",
@@ -42,6 +43,7 @@ Optional request options passed to the code action core module.
 | `range` | `table\|nil` | No | `nil` | Optional range `{ start, end }`. |
 | `range.start` | `{integer, integer}\|nil` | No | `nil` | Optional start position `{line, col}`. |
 | `range.end` | `{integer, integer}\|nil` | No | `nil` | Optional end position `{line, col}`. |
+| `fallback_to_menu` | `boolean\|nil` | No | `true` | Used by `preferred()`: open picker when no unique preferred action exists. |
 
 ## Module
 
@@ -59,6 +61,7 @@ Behavior:
 - group headers are centered and rendered as bordered divider lines
 - selection index/count is shown in the float border footer (right-aligned)
 - keymaps: `j`/`k`, `<Down>`/`<Up>`, `<Tab>`/`<S-Tab>`, `<CR>`/`<Space>`, `<Esc>`/`<C-c>`
+- when `codeactions.auto_apply_preferred_if_single = true`, applies one preferred action immediately instead of opening menu
 
 ```lua
 require("cosmic-ui").codeactions.open()
@@ -90,4 +93,21 @@ end)
 require("cosmic-ui").codeactions.range({
   range = { start = { 10, 0 }, ["end"] = { 12, 0 } },
 })
+```
+
+### `require("cosmic-ui").codeactions.preferred(opts?)`
+
+Requests code actions at the current cursor context and applies a preferred action when there is exactly one preferred match.
+
+Behavior:
+- warns and no-ops if `setup()` has not run or module is disabled
+- applies the single preferred code action directly
+- if none/multiple preferred actions exist:
+  - opens the menu by default
+  - or only warns when `opts.fallback_to_menu = false`
+
+```lua
+vim.keymap.set("n", "<leader>gA", function()
+  require("cosmic-ui").codeactions.preferred()
+end)
 ```
