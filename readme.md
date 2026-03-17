@@ -43,6 +43,8 @@ Cosmic-UI is a simple wrapper around specific vim functionality. Built in order 
   })
 ```
 
+After installation, open `:help cosmic-ui` for the in-editor help page.
+
 ## ⚙️ Configuration
 
 Call `setup()` before using any module. Calling module APIs before setup will warn and no-op.
@@ -94,6 +96,14 @@ Notes:
 - `code_actions` is not a supported key; use `codeactions`.
 
 ## 📚 Module Docs
+
+Neovim help:
+
+- `:help cosmic-ui`
+- `:help cosmic-ui.setup`
+- `:help cosmic-ui.rename`
+- `:help cosmic-ui.codeactions`
+- `:help cosmic-ui.formatters`
 
 ### Feature modules
 
