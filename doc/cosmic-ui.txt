@@ -10,7 +10,8 @@ CONTENTS                                                     *cosmic-ui-contents
 5. Rename .................................................. |cosmic-ui.rename|
 6. Code Actions ...................................... |cosmic-ui.codeactions|
 7. Formatters ........................................ |cosmic-ui.formatters|
-8. Keymap Examples ..................................... |cosmic-ui-examples|
+8. Troubleshooting ............................. |cosmic-ui-troubleshooting|
+9. Keymap Examples ..................................... |cosmic-ui-examples|
 
 ==============================================================================
 1. Overview                                                   *cosmic-ui-overview*
@@ -42,18 +43,42 @@ do nothing.
 ==============================================================================
 3. Installation                                           *cosmic-ui-installation*
 
-Example with packer.nvim: >
-  use({
+Example with lazy.nvim: >
+  {
     "CosmicNvim/cosmic-ui",
-    requires = {
+    dependencies = {
       "nvim-lua/plenary.nvim",
       "nvim-tree/nvim-web-devicons",
     },
     config = function()
-      require("cosmic-ui").setup()
+      require("cosmic-ui").setup({
+        rename = {},
+        codeactions = {},
+        formatters = {},
+      })
     end,
+  }
+<
+
+Example with native vim.pack: >
+  vim.pack.add({
+    "https://github.com/nvim-lua/plenary.nvim",
+    "https://github.com/nvim-tree/nvim-web-devicons",
+    "https://github.com/CosmicNvim/cosmic-ui",
+  })
+
+  require("cosmic-ui").setup({
+    rename = {},
+    codeactions = {},
+    formatters = {},
   })
 <
+
+Enable only the module tables you want to use. Omitting a module key disables
+that module.
+
+`vim.pack` is experimental in Neovim's official docs and may not be available
+in every local build yet.
 
 After installation, generate help tags for your plugin manager/runtime path if
 needed, then open |cosmic-ui|.
@@ -61,7 +86,7 @@ needed, then open |cosmic-ui|.
 ==============================================================================
 4. Setup and Configuration                                      *cosmic-ui.setup*
 
-Call setup() before using any module: >
+Call |cosmic-ui.setup| before using any module: >
   local cosmic = require("cosmic-ui")
 
   cosmic.setup({
@@ -73,8 +98,14 @@ Call setup() before using any module: >
 
 Root API:
 
-- require("cosmic-ui").setup(user_opts)
-- require("cosmic-ui").is_setup() -> boolean
+setup(user_opts)                                            *cosmic-ui.setup()*
+
+  Merges user options, stores runtime configuration, and enables modules whose
+  keys are present as tables in setup().
+
+is_setup()                                                *cosmic-ui.is_setup*
+
+  Returns true after |cosmic-ui.setup| has been called.
 
 Module loading is lazy. Accessing:
 
@@ -136,15 +167,19 @@ formatters options: >
   }
 <
 
+See also: |lsp-core|
+
 ==============================================================================
 5. Rename                                                      *cosmic-ui.rename*
+
+rename.open(opts?)                                      *cosmic-ui.rename.open*
 
 API: >
   require("cosmic-ui").rename.open(opts?)
 <
 
 Opens the rename prompt near the cursor and submits the result through
-vim.lsp.buf.rename().
+|vim.lsp.buf.rename()|.
 
 Behavior:
 
@@ -169,16 +204,18 @@ Example: >
   })
 <
 
+See also: |vim.lsp.buf.rename()| |lsp-core|
+
 ==============================================================================
 6. Code Actions                                           *cosmic-ui.codeactions*
 
-APIs: >
+codeactions.open(opts?)                             *cosmic-ui.codeactions.open*
+
+API: >
   require("cosmic-ui").codeactions.open(opts?)
-  require("cosmic-ui").codeactions.range(opts?)
 <
 
 open() requests code actions for the current cursor context.
-range() requests code actions for the active visual selection.
 
 Behavior:
 
@@ -193,7 +230,15 @@ opts may include:
 - params: explicit LSP request params
 - range: { start = {line, col}, end = {line, col} }
 
-range() selection rules:
+codeactions.range(opts?)                           *cosmic-ui.codeactions.range*
+
+API: >
+  require("cosmic-ui").codeactions.range(opts?)
+<
+
+Requests code actions for the active visual selection.
+
+Selection rules:
 
 - uses opts.range when provided
 - otherwise uses opts.params when provided
@@ -209,6 +254,8 @@ Examples: >
   require("cosmic-ui").codeactions.range()
 <
 
+See also: |vim.lsp.buf.code_action()| |lsp-core|
+
 ==============================================================================
 7. Formatters                                               *cosmic-ui.formatters*
 
@@ -223,25 +270,65 @@ module is disabled.
 
 UI and backend state:
 
-- require("cosmic-ui").formatters.open(opts?)
-- require("cosmic-ui").formatters.toggle(opts?)
-- require("cosmic-ui").formatters.enable(opts?)
-- require("cosmic-ui").formatters.disable(opts?)
-- require("cosmic-ui").formatters.is_enabled(opts?) -> boolean|table
-- require("cosmic-ui").formatters.reset(opts?)
+formatters.open(opts?)                               *cosmic-ui.formatters.open*
+
+  Opens the formatter UI for the selected scope.
+
+formatters.toggle(opts?)                           *cosmic-ui.formatters.toggle*
+
+  Toggles backend state for one or both backends.
+
+formatters.enable(opts?)                           *cosmic-ui.formatters.enable*
+
+  Enables backend state for one or both backends.
+
+formatters.disable(opts?)                         *cosmic-ui.formatters.disable*
+
+  Disables backend state for one or both backends.
+
+formatters.is_enabled(opts?)                   *cosmic-ui.formatters.is_enabled*
+
+  Returns a boolean for a single backend, or a table with `lsp` and `conform`
+  when no specific backend is requested.
+
+formatters.reset(opts?)                             *cosmic-ui.formatters.reset*
+
+  Clears backend overrides. When called without `backend`, it also clears all
+  per-item overrides for both sources.
 
 Per-item overrides:
 
-- require("cosmic-ui").formatters.toggle_item(opts)
-- require("cosmic-ui").formatters.enable_item(opts)
-- require("cosmic-ui").formatters.disable_item(opts)
-- require("cosmic-ui").formatters.is_item_enabled(opts) -> boolean|nil
+formatters.toggle_item(opts)                 *cosmic-ui.formatters.toggle_item*
+
+  Toggles one formatter item override.
+
+formatters.enable_item(opts)                 *cosmic-ui.formatters.enable_item*
+
+  Enables one formatter item override.
+
+formatters.disable_item(opts)               *cosmic-ui.formatters.disable_item*
+
+  Disables one formatter item override.
+
+formatters.is_item_enabled(opts)         *cosmic-ui.formatters.is_item_enabled*
+
+  Returns the effective state of one formatter item, or nil for invalid input.
 
 Inspection and formatting:
 
-- require("cosmic-ui").formatters.status(opts?) -> table
-- require("cosmic-ui").formatters.format(opts?) -> boolean|nil
-- require("cosmic-ui").formatters.format_async(opts?) -> boolean|nil
+formatters.status(opts?)                           *cosmic-ui.formatters.status*
+
+  Returns a status snapshot for UI and inspection, including backend state,
+  item availability, and Conform fallback visibility.
+
+formatters.format(opts?)                           *cosmic-ui.formatters.format*
+
+  Runs synchronous formatting.
+
+formatters.format_async(opts?)                *cosmic-ui.formatters.format_async*
+
+  Runs asynchronous formatting with the same routing rules as
+  |cosmic-ui.formatters.format|.
 
 Common opts:
 
@@ -267,8 +354,7 @@ Formatting behavior:
   3. Conform global default
   4. "never"
 
-status() returns a snapshot for UI and inspection, including backend state,
-formatter availability, and Conform fallback visibility.
+See also: |vim.lsp.buf.format()| |lsp-core|
 
 Examples: >
   local fmt = require("cosmic-ui").formatters
@@ -286,7 +372,42 @@ Examples: >
 <
 
 ==============================================================================
-8. Keymap Examples                                           *cosmic-ui-examples*
+8. Troubleshooting                                   *cosmic-ui-troubleshooting*
+
+setup() warnings:
+
+- If a method warns that cosmic-ui is not set up, call |cosmic-ui.setup| before
+  using module APIs.
+
+Disabled module warnings:
+
+- If a method warns that a module is disabled, add that module as a table in
+  setup() or remove `enabled = false`.
+
+Rename or code actions show nothing:
+
+- Confirm an LSP client supporting rename or code actions is attached to the
+  current buffer.
+- See |vim.lsp.buf.rename()| and |vim.lsp.buf.code_action()|.
+
+Conform fallback or skipped formatting:
+
+- If Conform.nvim is unavailable, cosmic-ui falls back to |vim.lsp.buf.format()|
+  when the LSP backend is enabled.
+- If Conform is requested while LSP is disabled, Conform LSP fallback is forced
+  to "never".
+
+Formatters UI fails with a devicons error:
+
+- Install `nvim-web-devicons`. The formatters UI requires it in addition to
+  `plenary.nvim`.
+
+General LSP debugging:
+
+- Run `:checkhealth vim.lsp` and review |lsp-core|.
+
+==============================================================================
+9. Keymap Examples                                           *cosmic-ui-examples*
 
 Example keymaps: >
   vim.keymap.set("n", "gn", function()
