@@ -179,6 +179,28 @@ describe('cosmic-ui.codeactions.ui', function()
     assert.is_false(vim.tbl_contains(lines, ' 1-9:pick '))
   end)
 
+  it('renders action rows without numeric prefixes', function()
+    local ui = require('cosmic-ui.codeactions.ui')
+
+    ui.open({
+      [1] = {
+        client = { id = 1, name = 'lua_ls' },
+        result = {
+          { title = 'Fix A' },
+          { title = 'Fix B' },
+        },
+      },
+    }, {})
+
+    local state = lifecycle.get_state()
+    local lines = vim.api.nvim_buf_get_lines(state.ui.buf, 0, -1, false)
+
+    assert.is_true(vim.tbl_contains(lines, ' Fix A '))
+    assert.is_true(vim.tbl_contains(lines, ' Fix B '))
+    assert.is_false(vim.tbl_contains(lines, ' 1. Fix A '))
+    assert.is_false(vim.tbl_contains(lines, ' 2. Fix B '))
+  end)
+
   it('does not reopen a dismissed loading panel when ready-state results arrive for the same request', function()
     local ui = require('cosmic-ui.codeactions.ui')
 
@@ -241,7 +263,7 @@ describe('cosmic-ui.codeactions.ui', function()
 
     local state = lifecycle.get_state()
     assert.is_not_nil(state.ui)
-    assert.is_true(vim.tbl_contains(vim.api.nvim_buf_get_lines(state.ui.buf, 0, -1, false), ' 1. Fix '))
+    assert.is_true(vim.tbl_contains(vim.api.nvim_buf_get_lines(state.ui.buf, 0, -1, false), ' Fix '))
   end)
 
   it('keeps explicit dismiss semantics when a ready panel is reused for a new loading request', function()

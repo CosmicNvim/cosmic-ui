@@ -95,8 +95,7 @@ M.render = function(ui)
       push_line(' ' .. row.text .. ' ', { highlight = row.highlight or 'CosmicUiPanelStateInfo' })
     elseif row.kind == 'action' then
       action_idx = action_idx + 1
-      local prefix = (#ui.model.actions <= 9) and (tostring(action_idx) .. '. ') or ''
-      push_line(' ' .. prefix .. row.text .. ' ')
+      push_line(' ' .. row.text .. ' ')
       action_line_by_idx[action_idx] = #lines
     else
       push_line(' ' .. (row.text or '') .. ' ')
