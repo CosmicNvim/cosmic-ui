@@ -2,7 +2,7 @@ local M = {}
 
 M.footer_entries = function()
   return {
-    'Tab:toggle',
+    'Tab:toggle+next',
     's:scope',
     'r:reset',
     'a:toggle all',
