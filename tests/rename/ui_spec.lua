@@ -132,7 +132,7 @@ describe('cosmic-ui.rename.ui', function()
     assert.are.equal('draft2', submitted)
   end)
 
-  it('locks the panel outside insert mode so helper lines cannot be edited', function()
+  it('keeps the compact rename buffer modifiable for prompt editing', function()
     stub_rename_context('current_name')
 
     local ui = require('cosmic-ui.rename.ui')
@@ -144,17 +144,46 @@ describe('cosmic-ui.rename.ui', function()
     local buf = vim.api.nvim_get_current_buf()
     local before = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
 
+    assert.are.same({ '> next_name' }, before)
+    assert.is_true(vim.bo[buf].modifiable)
+
     vim.cmd('stopinsert')
     vim.wait(1000, function()
       return vim.fn.mode() == 'n'
     end)
 
-    local ok = pcall(vim.cmd, 'normal! G0rx')
-    local after = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    assert.is_true(vim.bo[buf].modifiable)
+  end)
 
-    assert.is_false(vim.bo[buf].modifiable)
-    assert.is_false(ok)
-    assert.are.same(before, after)
+  it('clamps the cursor to the prompt prefix in compact mode', function()
+    stub_rename_context('current_name')
+
+    local ui = require('cosmic-ui.rename.ui')
+
+    ui.open({
+      default_value = 'next_name',
+    })
+
+    local win = vim.api.nvim_get_current_win()
+    local buf = vim.api.nvim_get_current_buf()
+    local prompt_len = #'> '
+
+    vim.cmd('stopinsert')
+    vim.wait(1000, function()
+      return vim.fn.mode() == 'n'
+    end)
+
+    vim.api.nvim_win_set_cursor(win, { 1, 0 })
+    vim.api.nvim_exec_autocmds('CursorMoved', { buffer = buf })
+    vim.wait(1000, function()
+      local cursor = vim.api.nvim_win_get_cursor(win)
+      return cursor[1] == 1 and cursor[2] == prompt_len
+    end)
+
+    local cursor = vim.api.nvim_win_get_cursor(win)
+
+    assert.are.equal(1, cursor[1])
+    assert.are.equal(prompt_len, cursor[2])
   end)
 
   it('renders the compact rename buffer as a single editable prompt line', function()
