@@ -71,6 +71,14 @@ M.open = function(results_lsp, user_opts)
     return
   end
 
+  local request_state = nil
+  if type(results_lsp) == 'table' and results_lsp.responses then
+    request_state = results_lsp
+    if lifecycle.is_request_dismissed(request_state) then
+      return
+    end
+  end
+
   user_opts = user_opts or {}
   local built = model.build(results_lsp)
   local existing = lifecycle.get_state().ui
@@ -149,6 +157,7 @@ M.open = function(results_lsp, user_opts)
     selected = (#built.actions > 0) and 1 or nil,
     min_width = math.max(user_opts.min_width or 30, built.min_width or 30),
     user_opts = user_opts,
+    request_state = request_state,
     border = border,
     origin_win = origin_win,
     ns = lifecycle.ensure_namespace('cosmic-ui-codeactions'),
@@ -162,7 +171,9 @@ M.open = function(results_lsp, user_opts)
   }
 
   local deps = {
-    close_fn = lifecycle.close_current,
+    close_fn = function()
+      lifecycle.close_current({ dismissed = true })
+    end,
     render_fn = render.render,
   }
 
@@ -170,6 +181,8 @@ M.open = function(results_lsp, user_opts)
   render.render(ui)
 end
 
-M.close = lifecycle.close_current
+M.close = function()
+  lifecycle.close_current({ dismissed = true })
+end
 
 return M

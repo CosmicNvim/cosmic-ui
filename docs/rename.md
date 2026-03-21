@@ -47,7 +47,7 @@ Rename input options.
 | `window.row` | `integer\|nil` | No | `1` | Float row offset. |
 | `window.col` | `integer\|nil` | No | `0` | Float column offset. |
 | `window.width` | `integer\|nil` | No | auto-fit prompt + symbol | Float width. |
-| `window.height` | `integer\|nil` | No | `1` | Float height. |
+| `window.height` | `integer\|nil` | No | `5` | Float height. |
 | `window.zindex` | `integer\|nil` | No | `50` | Float z-index. |
 | `window.border` | `table\|nil` | No | from rename border config | Border/title overrides. |
 | `window.border.style` | `string\|table\|nil` | No | `vim.o.winborder` | Native border style. |

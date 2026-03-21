@@ -57,7 +57,7 @@ Behavior:
 - opens a native floating menu (no NUI dependency)
 - menu groups are ordered deterministically by client name (tie-break: client id)
 - actions within each client group keep server response order
-- group headers are centered and rendered as bordered divider lines
+- group headers are rendered as plain section rows
 - selection index/count is shown in the float border footer (right-aligned)
 - keymaps: `j`/`k`, `<Down>`/`<Up>`, `<Tab>`/`<S-Tab>`, `<CR>`/`<Space>`, `<Esc>`/`<C-c>`
 
