@@ -10,6 +10,10 @@ local logger = utils.Logger
 
 local M = {}
 
+local function dismiss_current()
+  lifecycle.close_current({ dismissed = true })
+end
+
 local function build_panel_model(built)
   local footer = {
     { key = 'Enter', text = 'apply' },
@@ -163,7 +167,7 @@ M.open = function(results_lsp, user_opts)
     ns = lifecycle.ensure_namespace('cosmic-ui-codeactions'),
   }
 
-  lifecycle.attach_close_autocmds(ui, lifecycle.close_current)
+  lifecycle.attach_close_autocmds(ui, dismiss_current)
   lifecycle.set_ui(ui)
 
   local handlers = {
@@ -171,9 +175,7 @@ M.open = function(results_lsp, user_opts)
   }
 
   local deps = {
-    close_fn = function()
-      lifecycle.close_current({ dismissed = true })
-    end,
+    close_fn = dismiss_current,
     render_fn = render.render,
   }
 
@@ -181,8 +183,6 @@ M.open = function(results_lsp, user_opts)
   render.render(ui)
 end
 
-M.close = function()
-  lifecycle.close_current({ dismissed = true })
-end
+M.close = dismiss_current
 
 return M

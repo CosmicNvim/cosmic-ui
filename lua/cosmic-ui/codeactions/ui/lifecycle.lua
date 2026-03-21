@@ -34,7 +34,7 @@ M.close_current = function(opts)
   end
 
   opts = opts or {}
-  if opts.dismissed and ui.request_state and ui.request_state.status == 'loading' then
+  if opts.dismissed ~= false and ui.request_state and ui.request_state.status == 'loading' then
     ui_state.dismissed_request = ui.request_state
   end
 

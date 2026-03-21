@@ -95,6 +95,36 @@ describe('cosmic-ui.codeactions.ui', function()
     assert.is_nil(lifecycle.get_state().ui)
   end)
 
+  it('does not reopen a loading panel after lifecycle close when ready-state results arrive for the same request', function()
+    local ui = require('cosmic-ui.codeactions.ui')
+
+    local request_state = {
+      status = 'loading',
+      responses = {},
+      total_clients = 1,
+      completed_clients = 0,
+    }
+
+    ui.open(request_state, {})
+    assert.is_not_nil(lifecycle.get_state().ui)
+
+    lifecycle.close_current()
+    assert.is_nil(lifecycle.get_state().ui)
+
+    request_state.status = 'ready'
+    request_state.completed_clients = 1
+    request_state.responses[1] = {
+      client = { id = 1, name = 'lua_ls' },
+      result = {
+        { title = 'Fix' },
+      },
+    }
+
+    ui.open(request_state, {})
+
+    assert.is_nil(lifecycle.get_state().ui)
+  end)
+
   it('supports numeric direct picks for the first visible actions', function()
     local input = require('cosmic-ui.codeactions.ui.input')
 
