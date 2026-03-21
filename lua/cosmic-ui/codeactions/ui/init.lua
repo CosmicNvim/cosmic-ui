@@ -31,8 +31,6 @@ local function build_panel_model(built)
   end
 
   return panel.prepare({
-    title = built.title,
-    subtitle = built.subtitle,
     rows = built.rows,
     footer = footer,
     selected = (#built.actions > 0) and 1 or nil,

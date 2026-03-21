@@ -179,6 +179,29 @@ describe('cosmic-ui.codeactions.ui', function()
     assert.is_false(vim.tbl_contains(lines, ' 1-9:pick '))
   end)
 
+  it('does not render duplicate in-buffer title or action-count rows', function()
+    local ui = require('cosmic-ui.codeactions.ui')
+
+    ui.open({
+      [1] = {
+        client = { id = 1, name = 'lua_ls' },
+        result = {
+          { title = 'Fix A' },
+          { title = 'Fix B' },
+        },
+      },
+    }, {})
+
+    local state = lifecycle.get_state()
+    local lines = vim.api.nvim_buf_get_lines(state.ui.buf, 0, -1, false)
+
+    assert.is_false(vim.tbl_contains(lines, ' Code Actions '))
+    assert.is_false(vim.tbl_contains(lines, ' 2 actions '))
+    assert.is_true(vim.tbl_contains(lines, ' lua_ls '))
+    assert.is_true(vim.tbl_contains(lines, ' Fix A '))
+    assert.is_true(vim.tbl_contains(lines, ' Fix B '))
+  end)
+
   it('renders action rows without numeric prefixes', function()
     local ui = require('cosmic-ui.codeactions.ui')
 
