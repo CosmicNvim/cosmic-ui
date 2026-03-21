@@ -73,6 +73,7 @@ M.open = function(opts, handlers)
     win = win,
     selected = nil,
     rows = {},
+    footer = input.footer_entries(),
     cursor_state = window.hide_cursor_with_group('CosmicUiFmtCursor'),
   }
 

@@ -1,5 +1,16 @@
 local M = {}
 
+M.footer_entries = function()
+  return {
+    'Tab:toggle',
+    's:scope',
+    'r:reset',
+    'a:toggle all',
+    'f:format',
+    'q:close',
+  }
+end
+
 local function next_toggleable_index(rows, start_idx, step)
   if #rows == 0 then
     return nil

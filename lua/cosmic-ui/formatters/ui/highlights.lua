@@ -1,3 +1,5 @@
+local shared_highlights = require('cosmic-ui.ui.highlights')
+
 local M = {}
 
 local function find_token(line, token, init)
@@ -31,34 +33,12 @@ local function status_hl_group(status)
   return 'CosmicUiFmtUnavailable'
 end
 
-local function highlight_hint_keys(bufnr, ns, line_no, line)
-  local keys = {
-    { key = '<tab>', token = '<tab>:' },
-    { key = 's', token = 's:' },
-    { key = 'r', token = 'r:' },
-    { key = 'a', token = 'a:' },
-    { key = 'f', token = 'f:' },
-    { key = 'q', token = 'q:' },
-  }
-  add_hl(bufnr, ns, line_no, 'CosmicUiFmtHintText', 0, -1)
-
-  for _, entry in ipairs(keys) do
-    local start_at = 1
-    while true do
-      local s_col, e_col = find_token(line, entry.token, start_at)
-      if not s_col then
-        break
-      end
-      add_hl(bufnr, ns, line_no, 'CosmicUiFmtHintKey', s_col, s_col + #entry.key)
-      start_at = e_col + 1
-    end
-  end
-end
-
 M.ensure = function(state, highlight_links)
   if not state.ns then
     state.ns = vim.api.nvim_create_namespace('cosmic-ui-formatters')
   end
+
+  shared_highlights.ensure()
 
   for name, link in pairs(highlight_links) do
     if name ~= 'CosmicUiFmtCursorLine' then
@@ -100,7 +80,7 @@ M.apply = function(bufnr, ns, ui, lines)
 
   vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
 
-  if ui.selected and ui.rows and ui.rows[ui.selected] then
+  if ui.selected and ui.rows and ui.rows[ui.selected] and lines[ui.rows[ui.selected].lnum] then
     local selected_row = ui.rows[ui.selected]
     add_hl(bufnr, ns, selected_row.lnum - 1, 'CosmicUiFmtCursorLine', 0, -1)
   end
@@ -114,36 +94,33 @@ M.apply = function(bufnr, ns, ui, lines)
 
   for _, row in ipairs(ui.rows) do
     local line = lines[row.lnum]
-    local lnum = row.lnum - 1
-    if row.kind == 'section' then
-      add_hl(bufnr, ns, lnum, 'CosmicUiFmtSection', 0, -1)
-      if row.ghost_text then
-        local ghost_start, ghost_end = find_token(line, row.ghost_text, 1)
-        add_hl(bufnr, ns, lnum, 'CosmicUiFmtHintText', ghost_start, ghost_end)
-      end
-    else
-      local status_start, status_end = find_token(line, row.status_icon, 1)
-      add_hl(bufnr, ns, lnum, status_hl_group(row.status), status_start, status_end)
+    if line then
+      local lnum = row.lnum - 1
+      if row.kind == 'section' then
+        add_hl(bufnr, ns, lnum, 'CosmicUiFmtSection', 0, -1)
+        if row.subtitle then
+          local subtitle_start, subtitle_end = find_token(line, row.subtitle, 1)
+          add_hl(bufnr, ns, lnum, 'CosmicUiFmtSubtitle', subtitle_start, subtitle_end)
+        end
+      else
+        local status_start, status_end = find_token(line, row.status_icon, 1)
+        add_hl(bufnr, ns, lnum, status_hl_group(row.status), status_start, status_end)
 
-      local icon_start, icon_end = find_token(line, row.source_icon, (status_end or 0) + 1)
-      add_hl(bufnr, ns, lnum, 'CosmicUiFmtIcon', icon_start, icon_end)
+        local icon_start, icon_end = find_token(line, row.source_icon, (status_end or 0) + 1)
+        add_hl(bufnr, ns, lnum, 'CosmicUiFmtIcon', icon_start, icon_end)
 
-      if row.reason then
-        local reason_text = ('(%s)'):format(row.reason)
-        local reason_start, reason_end = find_token(line, reason_text, (icon_end or 0) + 1)
-        add_hl(bufnr, ns, lnum, 'CosmicUiFmtUnavailable', reason_start, reason_end)
-      end
-
-      if row.ghost_text then
-        local ghost_start, ghost_end = find_token(line, row.ghost_text, (icon_end or 0) + 1)
-        add_hl(bufnr, ns, lnum, 'CosmicUiFmtHintText', ghost_start, ghost_end)
+        if row.reason then
+          local reason_start, reason_end = find_token(line, row.reason, (icon_end or 0) + 1)
+          add_hl(bufnr, ns, lnum, 'CosmicUiFmtUnavailable', reason_start, reason_end)
+        end
       end
     end
   end
 
-  if ui.footer_lnum then
-    local footer = lines[ui.footer_lnum]
-    highlight_hint_keys(bufnr, ns, ui.footer_lnum - 1, footer)
+  if ui.footer_lnum and ui.footer_spans and lines[ui.footer_lnum] then
+    for _, span in ipairs(ui.footer_spans) do
+      add_hl(bufnr, ns, ui.footer_lnum - 1, span.highlight, span.start_col, span.end_col)
+    end
   end
 end
 
