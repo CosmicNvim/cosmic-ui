@@ -24,6 +24,7 @@ end)
 describe('cosmic-ui.rename.ui', function()
   local original_get_clients
   local original_expand
+  local original_lsp_rename
 
   local function stub_rename_context(current_name)
     original_get_clients = vim.lsp.get_clients
@@ -54,10 +55,55 @@ describe('cosmic-ui.rename.ui', function()
       vim.fn.expand = original_expand
       original_expand = nil
     end
+
+    if original_lsp_rename then
+      vim.lsp.buf.rename = original_lsp_rename
+      original_lsp_rename = nil
+    end
   end
 
   local function press(keys)
     vim.api.nvim_feedkeys(vim.keycode(keys), 'xt', false)
+  end
+
+  local function prepare_named_buffer(lines, cursor)
+    vim.cmd('enew!')
+    vim.api.nvim_buf_set_name(0, vim.fn.tempname() .. '.js')
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, lines)
+    if cursor then
+      vim.api.nvim_win_set_cursor(0, cursor)
+    end
+  end
+
+  local function stub_workspace_edit_rename(old_name)
+    original_lsp_rename = vim.lsp.buf.rename
+    local rename_calls = {}
+
+    vim.lsp.buf.rename = function(new_name)
+      table.insert(rename_calls, new_name)
+
+      local buf = vim.api.nvim_get_current_buf()
+      local cursor = vim.api.nvim_win_get_cursor(0)
+      local row = cursor[1] - 1
+      local line = vim.api.nvim_get_current_line()
+      local start_col, end_col = line:find(old_name, 1, true)
+
+      vim.lsp.util.apply_workspace_edit({
+        changes = {
+          [vim.uri_from_bufnr(buf)] = {
+            {
+              range = {
+                start = { line = row, character = start_col - 1 },
+                ['end'] = { line = row, character = end_col },
+              },
+              newText = new_name,
+            },
+          },
+        },
+      }, 'utf-16')
+    end
+
+    return rename_calls
   end
 
   after_each(function()
@@ -153,6 +199,52 @@ describe('cosmic-ui.rename.ui', function()
     end)
 
     assert.is_true(vim.bo[buf].modifiable)
+  end)
+
+  it('stops insert mode before closing on escape', function()
+    stub_rename_context('current_name')
+
+    local ui = require('cosmic-ui.rename.ui')
+    local original_cmd = vim.cmd
+    local original_mode = vim.fn.mode
+    local seen = {}
+
+    vim.fn.mode = function()
+      return 'i'
+    end
+
+    vim.cmd = function(command)
+      if command == 'startinsert!' then
+        return
+      end
+
+      if command == 'stopinsert' then
+        table.insert(seen, command)
+        return
+      end
+
+      return original_cmd(command)
+    end
+
+    local ok, err = pcall(function()
+      ui.open({
+        default_value = 'next_name',
+      })
+
+      press('<Esc>')
+      vim.wait(1000, function()
+        return #seen > 0
+      end)
+    end)
+
+    vim.cmd = original_cmd
+    vim.fn.mode = original_mode
+
+    if not ok then
+      error(err)
+    end
+
+    assert.are.same({ 'stopinsert' }, seen)
   end)
 
   it('clamps the cursor to the prompt prefix in compact mode', function()
@@ -319,5 +411,120 @@ describe('cosmic-ui.rename.ui', function()
     end)
 
     assert.are.equal(origin_win, vim.api.nvim_get_current_win())
+  end)
+
+  it('restores the origin cursor position on cancel', function()
+    stub_rename_context('current_name')
+
+    local ui = require('cosmic-ui.rename.ui')
+    local origin_win = vim.api.nvim_get_current_win()
+
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'alpha beta', 'gamma' })
+    vim.api.nvim_win_set_cursor(origin_win, { 1, 7 })
+
+    ui.open({
+      default_value = 'next_name',
+      on_submit = function()
+        error('rename should not submit on cancel')
+      end,
+    })
+
+    press('<Esc>')
+    vim.wait(1000, function()
+      return vim.api.nvim_get_current_win() == origin_win
+        and vim.deep_equal(vim.api.nvim_win_get_cursor(origin_win), { 1, 7 })
+    end)
+
+    assert.are.equal(origin_win, vim.api.nvim_get_current_win())
+    assert.are.same({ 1, 7 }, vim.api.nvim_win_get_cursor(origin_win))
+  end)
+
+  it('restores the origin cursor position on cancel when starting on the first letter of a word', function()
+    stub_rename_context('beta')
+
+    local ui = require('cosmic-ui.rename.ui')
+    local origin_win = vim.api.nvim_get_current_win()
+
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'alpha beta', 'gamma' })
+    vim.api.nvim_win_set_cursor(origin_win, { 1, 6 })
+
+    ui.open({
+      default_value = 'beta',
+      on_submit = function()
+        error('rename should not submit on cancel')
+      end,
+    })
+
+    press('<Esc>')
+    vim.wait(1000, function()
+      return vim.api.nvim_get_current_win() == origin_win
+    end)
+    vim.wait(300, function()
+      return false
+    end)
+
+    assert.are.equal(origin_win, vim.api.nvim_get_current_win())
+    assert.are.same({ 1, 6 }, vim.api.nvim_win_get_cursor(origin_win))
+  end)
+
+  it('keeps the cursor on the renamed symbol after submitting a shorter name', function()
+    stub_rename_context('very_long_name')
+    local ui = require('cosmic-ui.rename.ui')
+    local origin_win = vim.api.nvim_get_current_win()
+    local rename_calls = stub_workspace_edit_rename('very_long_name')
+
+    prepare_named_buffer({ 'const very_long_name = 1;' }, { 1, 16 })
+
+    ui.open({
+      default_value = 'very_long_name',
+    })
+
+    local prompt_buf = vim.api.nvim_get_current_buf()
+    vim.bo[prompt_buf].modifiable = true
+    vim.api.nvim_buf_set_lines(prompt_buf, 0, -1, false, { '> short' })
+    vim.bo[prompt_buf].modifiable = false
+
+    press('<CR>')
+    vim.wait(1000, function()
+      return vim.api.nvim_get_current_win() == origin_win and vim.api.nvim_get_current_line() == 'const short = 1;'
+    end)
+    vim.wait(300, function()
+      return false
+    end)
+
+    assert.are.same({ 'short' }, rename_calls)
+    assert.are.equal(origin_win, vim.api.nvim_get_current_win())
+    assert.are.same({ 1, 10 }, vim.api.nvim_win_get_cursor(origin_win))
+  end)
+
+  it('keeps the cursor at the trigger position after submitting a longer name', function()
+    stub_rename_context('mid')
+    local ui = require('cosmic-ui.rename.ui')
+    local origin_win = vim.api.nvim_get_current_win()
+    local rename_calls = stub_workspace_edit_rename('mid')
+
+    prepare_named_buffer({ 'const mid = 1;' }, { 1, 8 })
+
+    ui.open({
+      default_value = 'mid',
+    })
+
+    local prompt_buf = vim.api.nvim_get_current_buf()
+    vim.bo[prompt_buf].modifiable = true
+    vim.api.nvim_buf_set_lines(prompt_buf, 0, -1, false, { '> much_longer_name' })
+    vim.bo[prompt_buf].modifiable = false
+
+    press('<CR>')
+    vim.wait(1000, function()
+      return vim.api.nvim_get_current_win() == origin_win
+        and vim.api.nvim_get_current_line() == 'const much_longer_name = 1;'
+    end)
+    vim.wait(300, function()
+      return false
+    end)
+
+    assert.are.same({ 'much_longer_name' }, rename_calls)
+    assert.are.equal(origin_win, vim.api.nvim_get_current_win())
+    assert.are.same({ 1, 8 }, vim.api.nvim_win_get_cursor(origin_win))
   end)
 end)

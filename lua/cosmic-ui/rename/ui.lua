@@ -280,6 +280,18 @@ local function backspace(ui)
   set_cursor_col(ui, col - 1)
 end
 
+local function stop_insert_mode_if_needed()
+  local ok, mode = pcall(vim.fn.mode)
+  if not ok or type(mode) ~= 'string' then
+    return
+  end
+
+  local mode_prefix = mode:sub(1, 1)
+  if mode_prefix == 'i' or mode_prefix == 'R' then
+    pcall(vim.cmd, 'stopinsert')
+  end
+end
+
 M.open = function(opts)
   validate_open_opts(opts)
 
@@ -377,6 +389,7 @@ M.open = function(opts)
     value = default_value,
     validation_reason = nil,
     origin_win = target_winid,
+    origin_cursor = target_cursor,
     fixed_width = opts.window and opts.window.width or nil,
     fixed_height = opts.window and opts.window.height or nil,
     closed = false,
@@ -386,15 +399,40 @@ M.open = function(opts)
   local augroup = vim.api.nvim_create_augroup('cosmic_ui_rename_' .. tostring(buf), { clear = true })
   ui.augroup = augroup
 
-  local function close()
+  local function restore_origin_state()
+    window.restore_focus(ui.origin_win)
+    if ui.origin_win and ui.origin_cursor and vim.api.nvim_win_is_valid(ui.origin_win) then
+      pcall(vim.api.nvim_win_set_cursor, ui.origin_win, ui.origin_cursor)
+    end
+  end
+
+  local function restore_origin_state_deferred()
+    vim.schedule(function()
+      vim.schedule(restore_origin_state)
+    end)
+  end
+
+  local function close(opts)
+    opts = opts or {}
+
     if ui.closed then
       return
     end
     ui.closed = true
 
+    stop_insert_mode_if_needed()
     pcall(vim.api.nvim_del_augroup_by_id, augroup)
     window.safe_close_win(win)
     window.safe_delete_buf(buf, { force = true })
+    if opts.restore_origin_state then
+      restore_origin_state_deferred()
+    end
+  end
+
+  local function cancel()
+    close({
+      restore_origin_state = true,
+    })
   end
 
   local function submit()
@@ -421,13 +459,13 @@ M.open = function(opts)
   vim.api.nvim_create_autocmd({ 'BufLeave', 'WinLeave' }, {
     group = augroup,
     buffer = buf,
-    callback = close,
+    callback = cancel,
   })
 
   vim.api.nvim_create_autocmd('WinClosed', {
     group = augroup,
     pattern = tostring(win),
-    callback = close,
+    callback = cancel,
   })
 
   vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
@@ -446,8 +484,8 @@ M.open = function(opts)
     set_cursor_col(ui, ui.prompt_col)
   end, map_opts)
   vim.keymap.set({ 'i', 'n' }, '<CR>', submit, map_opts)
-  vim.keymap.set({ 'i', 'n' }, '<Esc>', close, map_opts)
-  vim.keymap.set({ 'i', 'n' }, '<C-c>', close, map_opts)
+  vim.keymap.set({ 'i', 'n' }, '<Esc>', cancel, map_opts)
+  vim.keymap.set({ 'i', 'n' }, '<C-c>', cancel, map_opts)
 
   render(ui, default_value)
   vim.api.nvim_set_current_win(win)
