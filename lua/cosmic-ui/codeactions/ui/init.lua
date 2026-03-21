@@ -181,6 +181,12 @@ M.open = function(results_lsp, user_opts)
 
   input.set_keymaps(ui, handlers, deps)
   render.render(ui)
+
+  vim.api.nvim_buf_call(buf, function()
+    if vim.fn.mode() ~= 'n' then
+      vim.api.nvim_input('<Esc>')
+    end
+  end)
 end
 
 M.close = dismiss_current

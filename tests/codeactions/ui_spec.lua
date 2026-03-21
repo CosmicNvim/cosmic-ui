@@ -44,6 +44,42 @@ describe('cosmic-ui.codeactions.ui', function()
     )
   end)
 
+  it('requests normal-mode normalization when opened outside normal mode', function()
+    local ui = require('cosmic-ui.codeactions.ui')
+    local original_mode = vim.fn.mode
+    local original_input = vim.api.nvim_input
+    local seen = {}
+
+    vim.fn.mode = function()
+      return 'i'
+    end
+    vim.api.nvim_input = function(keys)
+      table.insert(seen, keys)
+      return ''
+    end
+
+    local ok, err = pcall(function()
+      ui.open({
+        [1] = {
+          client = { id = 1, name = 'lua_ls' },
+          result = {
+            { title = 'Fix' },
+          },
+        },
+      }, {})
+    end)
+
+    vim.fn.mode = original_mode
+    vim.api.nvim_input = original_input
+
+    if not ok then
+      error(err)
+    end
+
+    ui.close()
+    assert.are.same({ '<Esc>' }, seen)
+  end)
+
   it('highlights footer helpers from the first character', function()
     local ui = require('cosmic-ui.codeactions.ui')
 
