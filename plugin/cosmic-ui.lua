@@ -12,16 +12,16 @@ _G.CosmicUI = require('cosmic-ui')
 
 vim.api.nvim_create_user_command('CosmicRename', function()
   require('cosmic-ui').rename.open()
-end, {})
+end, { desc = 'Open the Cosmic rename prompt' })
 
 vim.api.nvim_create_user_command('CosmicCodeActions', function()
   require('cosmic-ui').codeactions.open()
-end, {})
+end, { desc = 'Open the Cosmic code action panel' })
 
 vim.api.nvim_create_user_command('CosmicFormatters', function()
   require('cosmic-ui').formatters.open()
-end, {})
+end, { desc = 'Open the Cosmic formatter panel' })
 
 vim.api.nvim_create_user_command('CosmicFormat', function()
   require('cosmic-ui').formatters.format()
-end, {})
+end, { desc = 'Format the current buffer with Cosmic formatter routing' })
