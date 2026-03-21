@@ -1,4 +1,4 @@
-*cosmic-ui.txt*    cosmic-ui for Neovim 0.11+    Last change: 2026 Mar 16
+*cosmic-ui.txt*    cosmic-ui for Neovim 0.11+    Last change: 2026 Mar 20
 
 ==============================================================================
 CONTENTS                                                     *cosmic-ui-contents*
@@ -10,14 +10,16 @@ CONTENTS                                                     *cosmic-ui-contents
 5. Rename .................................................. |cosmic-ui.rename|
 6. Code Actions ...................................... |cosmic-ui.codeactions|
 7. Formatters ........................................ |cosmic-ui.formatters|
-8. Troubleshooting ............................. |cosmic-ui-troubleshooting|
-9. Keymap Examples ..................................... |cosmic-ui-examples|
+8. Commands ......................................... |cosmic-ui-commands|
+9. Troubleshooting ............................. |cosmic-ui-troubleshooting|
+10. Keymap Examples .................................... |cosmic-ui-examples|
 
 ==============================================================================
 1. Overview                                                   *cosmic-ui-overview*
 
 cosmic-ui provides floating UI wrappers around built-in Neovim LSP workflows.
-Its public surface is Lua-only; the plugin does not define Ex commands.
+Its primary public surface is Lua APIs, with optional Ex commands for
+discoverability.
 
 Current modules:
 
@@ -25,6 +27,13 @@ Current modules:
 - codeactions: floating picker for cursor and visual-range code actions
 - formatters: UI and API for toggling LSP/Conform formatters per buffer or
   globally
+
+Optional commands:
+
+- :CosmicRename
+- :CosmicCodeActions
+- :CosmicFormatters
+- :CosmicFormat
 
 Open this help any time with: >
   :help cosmic-ui
@@ -204,6 +213,10 @@ Example: >
   })
 <
 
+Optional Ex command:
+
+- :CosmicRename        Open the Cosmic rename prompt
+
 See also: |vim.lsp.buf.rename()| |lsp-core|
 
 ==============================================================================
@@ -253,6 +266,10 @@ Examples: >
 
   require("cosmic-ui").codeactions.range()
 <
+
+Optional Ex command:
+
+- :CosmicCodeActions   Open the Cosmic code action panel
 
 See also: |vim.lsp.buf.code_action()| |lsp-core|
 
@@ -371,8 +388,25 @@ Examples: >
   fmt.format_async({ backend = { "conform", "lsp" } })
 <
 
+Optional Ex commands:
+
+- :CosmicFormatters   Open the Cosmic formatter panel
+- :CosmicFormat       Format the current buffer
+
 ==============================================================================
-8. Troubleshooting                                   *cosmic-ui-troubleshooting*
+8. Commands                                                 *cosmic-ui-commands*
+
+cosmic-ui keeps Lua APIs first-class and also exposes optional commands:
+
+- :CosmicRename        Open the Cosmic rename prompt
+- :CosmicCodeActions   Open the Cosmic code action panel
+- :CosmicFormatters    Open the Cosmic formatter panel
+- :CosmicFormat        Format the current buffer
+
+These commands call the same module APIs documented above.
+
+==============================================================================
+9. Troubleshooting                                   *cosmic-ui-troubleshooting*
 
 setup() warnings:
 
@@ -407,7 +441,7 @@ General LSP debugging:
 - Run `:checkhealth vim.lsp` and review |lsp-core|.
 
 ==============================================================================
-9. Keymap Examples                                           *cosmic-ui-examples*
+10. Keymap Examples                                          *cosmic-ui-examples*
 
 Example keymaps: >
   vim.keymap.set("n", "gn", function()

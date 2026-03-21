@@ -16,6 +16,14 @@ require("cosmic-ui").setup({
 
 If setup is not called, or a module is disabled, calls will warn and no-op.
 
+Lua APIs are the primary interface. Optional Ex commands are also available for
+discoverability:
+
+- `:CosmicRename`
+- `:CosmicCodeActions`
+- `:CosmicFormatters`
+- `:CosmicFormat`
+
 ## Rename
 
 Use when you want to rename the symbol under cursor.
@@ -43,6 +51,8 @@ vim.keymap.set("n", "gn", function()
   require("cosmic-ui").rename.open()
 end, { silent = true, desc = "Rename symbol" })
 ```
+
+Optional command: `:CosmicRename`
 
 ```lua
 require("cosmic-ui").rename.open({
@@ -105,6 +115,8 @@ vim.keymap.set("v", "<leader>ga", function()
   require("cosmic-ui").codeactions.range()
 end, { silent = true, desc = "Range code actions" })
 ```
+
+Optional command: `:CosmicCodeActions`
 
 ### Optional advanced opts
 
@@ -279,6 +291,11 @@ vim.keymap.set("n", "<leader>fm", function()
   require("cosmic-ui").formatters.format()
 end, { silent = true, desc = "Format" })
 ```
+
+Optional commands:
+
+- `:CosmicFormatters` opens the Cosmic formatter panel.
+- `:CosmicFormat` formats the current buffer.
 
 ```lua
 require("cosmic-ui").formatters.disable({

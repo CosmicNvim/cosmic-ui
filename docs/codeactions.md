@@ -2,6 +2,7 @@
 
 Code actions module for `cosmic-ui`.
 This module validates setup/module enable state and runs code action requests directly.
+Lua API is primary; `:CosmicCodeActions` is an optional wrapper.
 
 ## Setup
 
@@ -91,3 +92,7 @@ require("cosmic-ui").codeactions.range({
   range = { start = { 10, 0 }, ["end"] = { 12, 0 } },
 })
 ```
+
+Optional command:
+
+- `:CosmicCodeActions` opens the Cosmic code action panel.

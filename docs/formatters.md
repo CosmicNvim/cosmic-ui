@@ -2,6 +2,7 @@
 
 Formatter controls module for `cosmic-ui`.
 This module validates setup and module enable state, then executes formatter operations.
+Lua APIs are primary; `:CosmicFormatters` and `:CosmicFormat` are optional wrappers.
 
 ## Setup
 
@@ -187,6 +188,11 @@ fmt.open()
 fmt.toggle({ backend = "lsp" })
 fmt.format_async({ backend = { "conform", "lsp" } })
 ```
+
+Optional commands:
+
+- `:CosmicFormatters` opens the Cosmic formatter panel.
+- `:CosmicFormat` formats the current buffer.
 
 ### Conform `format_on_save` example
 

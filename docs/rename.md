@@ -2,6 +2,7 @@
 
 Rename UI module for `cosmic-ui`.
 This module validates setup and module enable state, then runs rename UI logic directly.
+Lua API is primary; `:CosmicRename` is an optional wrapper.
 
 ## Setup
 
@@ -81,3 +82,7 @@ require("cosmic-ui").rename.open({
   },
 })
 ```
+
+Optional command:
+
+- `:CosmicRename` opens the Cosmic rename prompt.

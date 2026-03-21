@@ -15,8 +15,8 @@ _Warning: Under heavy development_
 Cosmic-UI is a simple wrapper around specific vim functionality. Built in order to provide a quick and easy way to create a Cosmic UI experience with Neovim!
 
 - Rename floating popup & file change notification
-- Code Actions
-- Formatter toggles (LSP + Conform.nvim)
+- Code action panel with grouped, ordered results
+- Formatter panel for LSP + Conform.nvim toggles and formatting
 
 ## 📷 Screenshots
 
@@ -111,6 +111,13 @@ Neovim help:
 - `:help cosmic-ui.codeactions`
 - `:help cosmic-ui.formatters`
 
+Optional commands:
+
+- `:CosmicRename`
+- `:CosmicCodeActions`
+- `:CosmicFormatters`
+- `:CosmicFormat`
+
 ### Feature modules
 
 - `rename`: Cursor-local rename input that dispatches LSP rename requests.  
@@ -148,6 +155,8 @@ vim.keymap.set("n", "gn", function()
 end, { silent = true, desc = "Rename" })
 ```
 
+Optional command: `:CosmicRename`
+
 ### Codeactions
 
 ```lua
@@ -159,6 +168,8 @@ vim.keymap.set("v", "<leader>ga", function()
   require("cosmic-ui").codeactions.range()
 end, { silent = true, desc = "Range code actions" })
 ```
+
+Optional command: `:CosmicCodeActions`
 
 ### Formatters
 
@@ -175,6 +186,11 @@ vim.keymap.set("n", "<leader>fm", function()
   require("cosmic-ui").formatters.format()
 end, { silent = true, desc = "Format buffer" })
 ```
+
+Optional commands:
+
+- `:CosmicFormatters`
+- `:CosmicFormat`
 
 Formatting behavior:
 - If Conform.nvim is installed and conform backend is enabled, `format()` uses Conform.
