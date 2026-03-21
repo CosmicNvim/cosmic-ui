@@ -134,13 +134,42 @@ describe('cosmic-ui.rename.ui', function()
       end,
     })
 
-    vim.cmd('normal! A2')
+    local buf = vim.api.nvim_get_current_buf()
+    vim.bo[buf].modifiable = true
+    vim.api.nvim_buf_set_text(buf, 2, 7, 2, 7, { '2' })
+    vim.bo[buf].modifiable = false
+
     press('<CR>')
     vim.wait(1000, function()
       return submitted ~= nil
     end)
 
     assert.are.equal('draft2', submitted)
+  end)
+
+  it('locks the panel outside insert mode so helper lines cannot be edited', function()
+    stub_rename_context('current_name')
+
+    local ui = require('cosmic-ui.rename.ui')
+
+    ui.open({
+      default_value = 'next_name',
+    })
+
+    local buf = vim.api.nvim_get_current_buf()
+    local before = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+
+    vim.cmd('stopinsert')
+    vim.wait(1000, function()
+      return vim.fn.mode() == 'n'
+    end)
+
+    local ok = pcall(vim.cmd, 'normal! G0rx')
+    local after = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+
+    assert.is_false(vim.bo[buf].modifiable)
+    assert.is_false(ok)
+    assert.are.same(before, after)
   end)
 
   it('preserves explicit window width and height overrides after render', function()

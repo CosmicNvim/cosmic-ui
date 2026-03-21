@@ -194,8 +194,10 @@ local function render(ui, value)
     vim.api.nvim_win_set_config(ui.win, cfg)
   end
 
+  local was_modifiable = vim.bo[ui.buf].modifiable
   vim.bo[ui.buf].modifiable = true
   vim.api.nvim_buf_set_lines(ui.buf, 0, -1, false, lines)
+  vim.bo[ui.buf].modifiable = was_modifiable
 
   vim.api.nvim_buf_clear_namespace(ui.buf, panel_ns, 0, -1)
   vim.api.nvim_buf_clear_namespace(ui.buf, prompt_ns, 0, -1)
@@ -270,6 +272,14 @@ local function backspace(ui)
   set_cursor_col(ui, col - 1)
 end
 
+local function set_editable(ui, editable)
+  if not (ui and ui.buf and vim.api.nvim_buf_is_valid(ui.buf)) then
+    return
+  end
+
+  vim.bo[ui.buf].modifiable = editable
+end
+
 M.open = function(opts)
   validate_open_opts(opts)
 
@@ -314,7 +324,7 @@ M.open = function(opts)
 
   local buf = window.create_scratch_buf({
     filetype = 'cosmicui-rename',
-    modifiable = true,
+    modifiable = false,
     bufhidden = 'wipe',
   })
   if not buf then
@@ -425,6 +435,23 @@ M.open = function(opts)
     buffer = buf,
     callback = function()
       ensure_cursor_after_prompt(ui)
+    end,
+  })
+
+  vim.api.nvim_create_autocmd('InsertEnter', {
+    group = augroup,
+    buffer = buf,
+    callback = function()
+      set_editable(ui, true)
+      ensure_cursor_after_prompt(ui)
+    end,
+  })
+
+  vim.api.nvim_create_autocmd('InsertLeave', {
+    group = augroup,
+    buffer = buf,
+    callback = function()
+      set_editable(ui, false)
     end,
   })
 
