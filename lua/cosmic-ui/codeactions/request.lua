@@ -46,12 +46,23 @@ M.collect = function(opts)
   local lnum = vim.api.nvim_win_get_cursor(0)[1] - 1
   local pending = #clients
   local results_lsp = {}
+  local request_state = {
+    status = 'loading',
+    responses = results_lsp,
+    total_clients = pending,
+    completed_clients = 0,
+  }
 
   if pending == 0 then
     if on_complete then
-      on_complete(results_lsp, user_opts)
+      request_state.status = 'ready'
+      on_complete(request_state, user_opts)
     end
     return
+  end
+
+  if on_complete then
+    on_complete(request_state, user_opts)
   end
 
   local function on_result(client)
@@ -62,13 +73,15 @@ M.collect = function(opts)
         client = client,
       }
 
+      request_state.completed_clients = request_state.completed_clients + 1
       pending = pending - 1
       if pending > 0 then
         return
       end
 
       if on_complete then
-        on_complete(results_lsp, user_opts)
+        request_state.status = 'ready'
+        on_complete(request_state, user_opts)
       end
     end
   end

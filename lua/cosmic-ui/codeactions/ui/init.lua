@@ -1,4 +1,5 @@
 local utils = require('cosmic-ui.utils')
+local panel = require('cosmic-ui.ui.panel')
 local window = require('cosmic-ui.window')
 local transform = require('cosmic-ui.codeactions.transform')
 local lifecycle = require('cosmic-ui.codeactions.ui.lifecycle')
@@ -9,17 +10,29 @@ local logger = utils.Logger
 
 local M = {}
 
-local function compute_content_width(rows, min_width)
-  local width = math.max(min_width or 30, 30)
-  for _, row in ipairs(rows) do
-    width = math.max(width, vim.fn.strdisplaywidth(row.text))
-  end
-  return width
-end
+local function build_panel_model(built)
+  local footer = {
+    { key = 'Enter', text = 'apply' },
+    { key = 'Esc', text = 'close' },
+  }
 
-local function compute_height(row_count)
-  local max_height = math.max(8, math.floor((vim.o.lines - vim.o.cmdheight) * 0.7))
-  return math.max(1, math.min(row_count, max_height))
+  if #built.actions > 0 and #built.actions <= 9 then
+    table.insert(footer, 2, { key = '1-9', text = 'pick' })
+  end
+
+  if #built.actions == 0 then
+    footer = {
+      { key = 'Esc', text = 'close' },
+    }
+  end
+
+  return panel.prepare({
+    title = built.title,
+    subtitle = built.subtitle,
+    rows = built.rows,
+    footer = footer,
+    selected = (#built.actions > 0) and 1 or nil,
+  })
 end
 
 local function submit_action(action)
@@ -53,16 +66,21 @@ local function submit_action(action)
 end
 
 M.open = function(results_lsp, user_opts)
-  if not results_lsp or next(results_lsp) == nil then
+  if not results_lsp then
     logger:warn('No results from textDocument/codeAction')
     return
   end
 
-  lifecycle.close_current()
-
   local built = model.build(results_lsp)
-  if #built.actions == 0 then
-    logger:log('No code actions available')
+  local existing = lifecycle.get_state().ui
+
+  if existing and vim.api.nvim_buf_is_valid(existing.buf) and vim.api.nvim_win_is_valid(existing.win) then
+    existing.model = built
+    existing.panel = build_panel_model(built)
+    if existing.selected and existing.selected > #built.actions then
+      existing.selected = nil
+    end
+    render.render(existing)
     return
   end
 
@@ -71,9 +89,7 @@ M.open = function(results_lsp, user_opts)
   if border_style == '' then
     border_style = nil
   end
-  local content_width = compute_content_width(built.rows, user_opts.min_width or built.min_width)
-  local width = content_width + 2
-  local height = compute_height(#built.rows)
+  local origin_win = vim.api.nvim_get_current_win()
 
   local buf = window.create_scratch_buf({
     filetype = 'cosmicui-codeactions',
@@ -88,13 +104,9 @@ M.open = function(results_lsp, user_opts)
     relative = 'cursor',
     row = 1,
     col = 0,
-    width = width,
-    height = height,
+    width = 30,
+    height = 1,
     border = border_style,
-    title = border.title,
-    title_pos = border.title_align,
-    footer = '(1/' .. tostring(#built.actions) .. ')',
-    footer_pos = 'right',
   })
   if not win then
     window.safe_delete_buf(buf, { force = true })
@@ -112,12 +124,7 @@ M.open = function(results_lsp, user_opts)
   if border.highlight then
     table.insert(winhl, 'FloatBorder:' .. border.highlight)
   end
-  if border.title_hl then
-    table.insert(winhl, 'FloatTitle:' .. border.title_hl)
-  end
-  if border.bottom_hl then
-    table.insert(winhl, 'FloatFooter:' .. border.bottom_hl)
-  end
+  table.insert(winhl, 'CursorLine:Visual')
   if #winhl > 0 then
     vim.wo[win].winhl = table.concat(winhl, ',')
   end
@@ -128,11 +135,12 @@ M.open = function(results_lsp, user_opts)
     row = 1,
     col = 0,
     model = built,
-    selected = 1,
+    panel = build_panel_model(built),
+    selected = (#built.actions > 0) and 1 or nil,
     user_opts = user_opts,
     border = border,
-    ns = vim.api.nvim_create_namespace('cosmic-ui-codeactions'),
-    content_width = content_width,
+    origin_win = origin_win,
+    ns = lifecycle.ensure_namespace('cosmic-ui-codeactions'),
   }
 
   lifecycle.attach_close_autocmds(ui, lifecycle.close_current)
@@ -149,12 +157,6 @@ M.open = function(results_lsp, user_opts)
 
   input.set_keymaps(ui, handlers, deps)
   render.render(ui)
-
-  vim.api.nvim_buf_call(buf, function()
-    if vim.fn.mode() ~= 'n' then
-      vim.api.nvim_input('<Esc>')
-    end
-  end)
 end
 
 M.close = lifecycle.close_current

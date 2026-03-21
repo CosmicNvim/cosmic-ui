@@ -43,6 +43,15 @@ M.set_keymaps = function(ui, handlers, deps)
     handlers.submit_action(action)
   end
 
+  local function submit_index(index)
+    if not ui.model.actions[index] then
+      return
+    end
+
+    ui.selected = index
+    submit()
+  end
+
   map('n', 'j', function()
     move(1)
   end)
@@ -68,6 +77,12 @@ M.set_keymaps = function(ui, handlers, deps)
 
   map('n', '<Esc>', deps.close_fn)
   map('n', '<C-c>', deps.close_fn)
+
+  for idx = 1, 9 do
+    map('n', tostring(idx), function()
+      submit_index(idx)
+    end)
+  end
 end
 
 return M

@@ -4,6 +4,7 @@ local M = {}
 
 local ui_state = {
   ui = nil,
+  ns = nil,
 }
 
 M.get_state = function()
@@ -12,6 +13,13 @@ end
 
 M.set_ui = function(ui)
   ui_state.ui = ui
+end
+
+M.ensure_namespace = function(name)
+  if not ui_state.ns then
+    ui_state.ns = vim.api.nvim_create_namespace(name or 'cosmic-ui-codeactions')
+  end
+  return ui_state.ns
 end
 
 M.close_current = function()
@@ -28,6 +36,7 @@ M.close_current = function()
 
   window.safe_close_win(ui.win)
   window.safe_delete_buf(ui.buf, { force = true })
+  window.restore_focus(ui.origin_win)
 end
 
 M.attach_close_autocmds = function(ui, close_fn)
