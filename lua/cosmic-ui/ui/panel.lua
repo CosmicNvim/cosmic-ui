@@ -64,6 +64,14 @@ local function normalize_rows(rows)
   return normalized
 end
 
+local function normalize_layout(layout)
+  if layout == 'compact' then
+    return 'compact'
+  end
+
+  return 'standard'
+end
+
 local function normalize_selected(selected, rows)
   if type(selected) ~= 'number' then
     return nil
@@ -82,6 +90,7 @@ function M.build(opts)
   local rows = normalize_rows(opts.rows)
 
   return {
+    layout = normalize_layout(opts.layout),
     title = opts.title or '',
     subtitle = opts.subtitle or '',
     title_highlight = 'CosmicUiPanelTitle',

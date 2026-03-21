@@ -62,6 +62,13 @@ describe('cosmic-ui.ui.panel', function()
     assert.is_nil(model.selected)
   end)
 
+  it('defaults panel layout to standard and preserves compact when requested', function()
+    local panel = require('cosmic-ui.ui.panel')
+
+    assert.are.equal('standard', panel.build({}).layout)
+    assert.are.equal('compact', panel.build({ layout = 'compact' }).layout)
+  end)
+
   it('prepares a panel by ensuring shared highlight links before returning the model', function()
     local constants = require('cosmic-ui.ui.constants')
     local panel = require('cosmic-ui.ui.panel')
