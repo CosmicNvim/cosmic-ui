@@ -10,6 +10,10 @@ local logger = utils.Logger
 
 local M = {}
 
+local function close_current()
+  lifecycle.close_current({ dismissed = false })
+end
+
 local function dismiss_current()
   lifecycle.close_current({ dismissed = true })
 end
@@ -85,12 +89,17 @@ M.open = function(results_lsp, user_opts)
 
   user_opts = user_opts or {}
   local built = model.build(results_lsp)
+  local origin_win = vim.api.nvim_get_current_win()
   local existing = lifecycle.get_state().ui
 
   if existing and vim.api.nvim_buf_is_valid(existing.buf) and vim.api.nvim_win_is_valid(existing.win) then
     existing.model = built
     existing.panel = build_panel_model(built)
-    existing.min_width = math.max(existing.min_width or 30, built.min_width or 30)
+    existing.min_width = math.max(existing.min_width or 30, user_opts.min_width or 30, built.min_width or 30)
+    existing.user_opts = user_opts
+    existing.request_state = request_state
+    existing.border = user_opts.border or existing.border
+    existing.origin_win = origin_win
     if existing.selected and existing.selected > #built.actions then
       existing.selected = nil
     end
@@ -103,7 +112,6 @@ M.open = function(results_lsp, user_opts)
   if border_style == '' then
     border_style = nil
   end
-  local origin_win = vim.api.nvim_get_current_win()
 
   local buf = window.create_scratch_buf({
     filetype = 'cosmicui-codeactions',
@@ -167,7 +175,7 @@ M.open = function(results_lsp, user_opts)
     ns = lifecycle.ensure_namespace('cosmic-ui-codeactions'),
   }
 
-  lifecycle.attach_close_autocmds(ui, dismiss_current)
+  lifecycle.attach_close_autocmds(ui, close_current)
   lifecycle.set_ui(ui)
 
   local handlers = {
@@ -175,7 +183,8 @@ M.open = function(results_lsp, user_opts)
   }
 
   local deps = {
-    close_fn = dismiss_current,
+    close_fn = close_current,
+    dismiss_fn = dismiss_current,
     render_fn = render.render,
   }
 

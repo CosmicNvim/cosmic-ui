@@ -21,6 +21,8 @@ M.set_keymaps = function(ui, handlers, deps)
     vim.keymap.set(mode, lhs, rhs, { buffer = ui.buf, silent = true, nowait = true })
   end
 
+  local dismiss = deps.dismiss_fn or deps.close_fn
+
   local function move(step)
     local idx = next_index(ui, step)
     if not idx then
@@ -75,8 +77,8 @@ M.set_keymaps = function(ui, handlers, deps)
   map('n', '<CR>', submit)
   map('n', '<Space>', submit)
 
-  map('n', '<Esc>', deps.close_fn)
-  map('n', '<C-c>', deps.close_fn)
+  map('n', '<Esc>', dismiss)
+  map('n', '<C-c>', dismiss)
 
   for idx = 1, 9 do
     map('n', tostring(idx), function()

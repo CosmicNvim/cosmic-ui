@@ -190,38 +190,79 @@ describe('cosmic-ui.codeactions.ui', function()
     assert.is_nil(lifecycle.get_state().ui)
   end)
 
-  it(
-    'does not reopen a loading panel after lifecycle close when ready-state results arrive for the same request',
-    function()
-      local ui = require('cosmic-ui.codeactions.ui')
+  it('reopens after a loading panel loses focus while the request is still in flight', function()
+    local ui = require('cosmic-ui.codeactions.ui')
 
-      local request_state = {
-        status = 'loading',
-        responses = {},
-        total_clients = 1,
-        completed_clients = 0,
-      }
+    local request_state = {
+      status = 'loading',
+      responses = {},
+      total_clients = 1,
+      completed_clients = 0,
+    }
 
-      ui.open(request_state, {})
-      assert.is_not_nil(lifecycle.get_state().ui)
+    ui.open(request_state, {})
+    assert.is_not_nil(lifecycle.get_state().ui)
 
-      lifecycle.close_current()
-      assert.is_nil(lifecycle.get_state().ui)
+    local buf = lifecycle.get_state().ui.buf
+    vim.api.nvim_exec_autocmds('BufLeave', { buffer = buf })
 
-      request_state.status = 'ready'
-      request_state.completed_clients = 1
-      request_state.responses[1] = {
+    assert.is_nil(lifecycle.get_state().ui)
+    assert.is_false(lifecycle.is_request_dismissed(request_state))
+
+    request_state.status = 'ready'
+    request_state.completed_clients = 1
+    request_state.responses[1] = {
+      client = { id = 1, name = 'lua_ls' },
+      result = {
+        { title = 'Fix' },
+      },
+    }
+
+    ui.open(request_state, {})
+
+    local state = lifecycle.get_state()
+    assert.is_not_nil(state.ui)
+    assert.is_true(vim.tbl_contains(vim.api.nvim_buf_get_lines(state.ui.buf, 0, -1, false), ' 1. Fix '))
+  end)
+
+  it('keeps explicit dismiss semantics when a ready panel is reused for a new loading request', function()
+    local ui = require('cosmic-ui.codeactions.ui')
+
+    ui.open({
+      [1] = {
         client = { id = 1, name = 'lua_ls' },
         result = {
-          { title = 'Fix' },
+          { title = 'Fix A' },
         },
-      }
+      },
+    }, {})
 
-      ui.open(request_state, {})
+    local request_state = {
+      status = 'loading',
+      responses = {},
+      total_clients = 1,
+      completed_clients = 0,
+    }
 
-      assert.is_nil(lifecycle.get_state().ui)
-    end
-  )
+    ui.open(request_state, {})
+    assert.are.equal(request_state, lifecycle.get_state().ui.request_state)
+
+    ui.close()
+    assert.is_nil(lifecycle.get_state().ui)
+
+    request_state.status = 'ready'
+    request_state.completed_clients = 1
+    request_state.responses[1] = {
+      client = { id = 1, name = 'lua_ls' },
+      result = {
+        { title = 'Fix B' },
+      },
+    }
+
+    ui.open(request_state, {})
+
+    assert.is_nil(lifecycle.get_state().ui)
+  end)
 
   it('supports numeric direct picks for the first visible actions', function()
     local input = require('cosmic-ui.codeactions.ui.input')
@@ -340,5 +381,75 @@ describe('cosmic-ui.codeactions.request', function()
         response_count = 2,
       },
     }, seen)
+  end)
+
+  it('freezes the source buffer before the loading callback changes current buffer', function()
+    local request = require('cosmic-ui.codeactions.request')
+    local original_get_namespace = vim.lsp.diagnostic.get_namespace
+    local original_diagnostic_get = vim.diagnostic.get
+    local original_make_range_params = vim.lsp.util.make_range_params
+    local seen = {}
+
+    vim.lsp.diagnostic.get_namespace = function()
+      return 0
+    end
+    vim.diagnostic.get = function()
+      return {}
+    end
+    vim.lsp.util.make_range_params = function(_, _)
+      return {
+        textDocument = {
+          uri = vim.uri_from_bufnr(vim.api.nvim_get_current_buf()),
+        },
+        context = {},
+      }
+    end
+
+    local ok, err = pcall(function()
+      vim.cmd('enew!')
+      local source_buf = vim.api.nvim_get_current_buf()
+      local source_name = vim.fn.tempname() .. '.ts'
+      vim.api.nvim_buf_set_name(source_buf, source_name)
+      local scratch_buf = vim.api.nvim_create_buf(false, true)
+      vim.api.nvim_buf_set_name(scratch_buf, 'scratch://loading')
+
+      request.collect({
+        bufnr = 0,
+        clients = {
+          {
+            id = 1,
+            name = 'lua_ls',
+            offset_encoding = 'utf-16',
+            request = function(_, _, params, cb, bufnr)
+              table.insert(seen, {
+                bufnr = bufnr,
+                current_buf = vim.api.nvim_get_current_buf(),
+                uri = params.textDocument and params.textDocument.uri or nil,
+              })
+              cb(nil, {})
+            end,
+          },
+        },
+        on_complete = function(state)
+          if state.status == 'loading' then
+            vim.api.nvim_set_current_buf(scratch_buf)
+          end
+        end,
+      })
+
+      assert.are.same({
+        {
+          bufnr = source_buf,
+          current_buf = scratch_buf,
+          uri = vim.uri_from_bufnr(source_buf),
+        },
+      }, seen)
+    end)
+
+    vim.lsp.diagnostic.get_namespace = original_get_namespace
+    vim.diagnostic.get = original_diagnostic_get
+    vim.lsp.util.make_range_params = original_make_range_params
+
+    assert.is_true(ok, err)
   end)
 end)
