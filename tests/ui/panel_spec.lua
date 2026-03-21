@@ -1,4 +1,11 @@
 describe('cosmic-ui.ui.panel', function()
+  it('keeps hotkey helper text readable in shared panels', function()
+    local constants = require('cosmic-ui.ui.constants')
+
+    assert.are.equal('Special', constants.highlight_links.CosmicUiPanelHintKey)
+    assert.are.equal('NormalFloat', constants.highlight_links.CosmicUiPanelHintText)
+  end)
+
   it('builds a standard empty state row', function()
     local states = require('cosmic-ui.ui.states')
     local row = states.empty('No code actions found')

@@ -13,7 +13,7 @@ return {
     CosmicUiPanelSubtitle = 'Comment',
     CosmicUiPanelSection = 'Type',
     CosmicUiPanelHintKey = 'Special',
-    CosmicUiPanelHintText = 'Comment',
+    CosmicUiPanelHintText = 'NormalFloat',
     CosmicUiPanelStateInfo = 'Comment',
     CosmicUiPanelStateWarn = 'WarningMsg',
     CosmicUiPanelStateError = 'ErrorMsg',
