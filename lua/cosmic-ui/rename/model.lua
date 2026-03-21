@@ -1,7 +1,15 @@
 local M = {}
 
+function M.extract_value(prompt, raw_line)
+  if vim.startswith(raw_line, prompt) then
+    return raw_line:sub(#prompt + 1)
+  end
+
+  return raw_line
+end
+
 function M.normalize_submission(prompt, raw_line, current_name)
-  local submitted = vim.startswith(raw_line, prompt) and raw_line:sub(#prompt + 1) or raw_line
+  local submitted = M.extract_value(prompt, raw_line)
 
   if submitted == '' then
     return { ok = false, reason = 'empty' }

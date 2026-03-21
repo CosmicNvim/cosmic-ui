@@ -70,14 +70,6 @@ local function default_submitter(curr_name, target_ctx)
   end
 end
 
-local function extract_value(prompt, raw_line)
-  if vim.startswith(raw_line, prompt) then
-    return raw_line:sub(#prompt + 1)
-  end
-
-  return raw_line
-end
-
 local function footer_line(entries)
   local text = ''
   local spans = {}
@@ -183,21 +175,22 @@ local function render(ui, value)
     push_line(' ' .. footer_text .. ' ', { spans = spans })
   end
 
-  local width = 30
-  for _, line in ipairs(lines) do
-    width = math.max(width, vim.fn.strdisplaywidth(line))
+  local width = ui.fixed_width or 30
+  if not ui.fixed_width then
+    for _, line in ipairs(lines) do
+      width = math.max(width, vim.fn.strdisplaywidth(line))
+    end
   end
 
   if ui.win and vim.api.nvim_win_is_valid(ui.win) then
     local cfg = vim.api.nvim_win_get_config(ui.win)
     cfg.width = width
-    cfg.height = #lines
+    cfg.height = ui.fixed_height or #lines
     vim.api.nvim_win_set_config(ui.win, cfg)
   end
 
   vim.bo[ui.buf].modifiable = true
   vim.api.nvim_buf_set_lines(ui.buf, 0, -1, false, lines)
-  vim.bo[ui.buf].modifiable = false
 
   vim.api.nvim_buf_clear_namespace(ui.buf, panel_ns, 0, -1)
   vim.api.nvim_buf_clear_namespace(ui.buf, prompt_ns, 0, -1)
@@ -369,6 +362,8 @@ M.open = function(opts)
     value = default_value,
     validation_reason = nil,
     origin_win = target_winid,
+    fixed_width = opts.window and opts.window.width or nil,
+    fixed_height = opts.window and opts.window.height or nil,
     closed = false,
     submitted = false,
   }
@@ -394,7 +389,7 @@ M.open = function(opts)
 
     if not result.ok then
       ui.validation_reason = result.reason
-      render(ui, extract_value(prompt, raw_line))
+      render(ui, model.extract_value(prompt, raw_line))
       return
     end
 

@@ -12,6 +12,13 @@ describe("cosmic-ui.rename.model", function()
 
     assert.are.same({ ok = false, reason = "unchanged" }, result)
   end)
+
+  it("extracts the submitted value from the prompt line", function()
+    local model = require("cosmic-ui.rename.model")
+
+    assert.are.equal("next_name", model.extract_value("> ", "> next_name"))
+    assert.are.equal("raw_name", model.extract_value("> ", "raw_name"))
+  end)
 end)
 
 describe("cosmic-ui.rename.ui", function()
@@ -96,6 +103,47 @@ describe("cosmic-ui.rename.ui", function()
       name = "next_name",
       win = origin_win,
     }, submitted)
+  end)
+
+  it("allows editing the prompt line before submit", function()
+    stub_rename_context("current_name")
+
+    local ui = require("cosmic-ui.rename.ui")
+    local submitted
+
+    ui.open({
+      default_value = "draft",
+      on_submit = function(new_name)
+        submitted = new_name
+      end,
+    })
+
+    vim.cmd("normal! A2")
+    press("<CR>")
+    vim.wait(1000, function()
+      return submitted ~= nil
+    end)
+
+    assert.are.equal("draft2", submitted)
+  end)
+
+  it("preserves explicit window width and height overrides after render", function()
+    stub_rename_context("current_name")
+
+    local ui = require("cosmic-ui.rename.ui")
+
+    ui.open({
+      default_value = "next_name",
+      window = {
+        width = 52,
+        height = 7,
+      },
+    })
+
+    local cfg = vim.api.nvim_win_get_config(vim.api.nvim_get_current_win())
+
+    assert.are.equal(52, cfg.width)
+    assert.are.equal(7, cfg.height)
   end)
 
   it("rejects empty submit from the panel without dispatching rename", function()
