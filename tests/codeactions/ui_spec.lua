@@ -160,6 +160,25 @@ describe('cosmic-ui.codeactions.ui', function()
     assert.is_true(string.find(vim.wo[state.ui.win].winhl, 'FloatFooter:Question', 1, true) ~= nil)
   end)
 
+  it('does not advertise numeric direct picks for small action lists', function()
+    local ui = require('cosmic-ui.codeactions.ui')
+
+    ui.open({
+      [1] = {
+        client = { id = 1, name = 'lua_ls' },
+        result = {
+          { title = 'Fix A' },
+          { title = 'Fix B' },
+        },
+      },
+    }, {})
+
+    local state = lifecycle.get_state()
+    local lines = vim.api.nvim_buf_get_lines(state.ui.buf, 0, -1, false)
+
+    assert.is_false(vim.tbl_contains(lines, ' 1-9:pick '))
+  end)
+
   it('does not reopen a dismissed loading panel when ready-state results arrive for the same request', function()
     local ui = require('cosmic-ui.codeactions.ui')
 
@@ -264,13 +283,11 @@ describe('cosmic-ui.codeactions.ui', function()
     assert.is_nil(lifecycle.get_state().ui)
   end)
 
-  it('supports numeric direct picks for the first visible actions', function()
+  it('does not install numeric direct-pick keymaps', function()
     local input = require('cosmic-ui.codeactions.ui.input')
 
     local buf = vim.api.nvim_create_buf(false, true)
     local win = vim.api.nvim_get_current_win()
-    local selected
-    local closed = 0
 
     local ui = {
       buf = buf,
@@ -286,22 +303,22 @@ describe('cosmic-ui.codeactions.ui', function()
     }
 
     input.set_keymaps(ui, {
-      submit_action = function(action)
-        selected = action.text
-      end,
+      submit_action = function() end,
     }, {
-      close_fn = function()
-        closed = closed + 1
-      end,
+      close_fn = function() end,
       render_fn = function() end,
     })
 
-    vim.api.nvim_set_current_win(win)
-    vim.api.nvim_set_current_buf(buf)
-    vim.api.nvim_feedkeys('2', 'xt', false)
+    local keymaps = vim.api.nvim_buf_get_keymap(buf, 'n')
+    local numeric_lhs = {}
 
-    assert.are.equal('Second action', selected)
-    assert.are.equal(1, closed)
+    for _, keymap in ipairs(keymaps) do
+      if string.match(keymap.lhs, '^%d$') then
+        table.insert(numeric_lhs, keymap.lhs)
+      end
+    end
+
+    assert.are.same({}, numeric_lhs)
   end)
 end)
 

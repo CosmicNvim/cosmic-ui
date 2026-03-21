@@ -24,10 +24,6 @@ local function build_panel_model(built)
     { key = 'Esc', text = 'close' },
   }
 
-  if #built.actions > 0 and #built.actions <= 9 then
-    table.insert(footer, 2, { key = '1-9', text = 'pick' })
-  end
-
   if #built.actions == 0 then
     footer = {
       { key = 'Esc', text = 'close' },
