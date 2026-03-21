@@ -130,6 +130,7 @@ local function build_panel_model(curr_name, reason)
   end
 
   return panel.prepare({
+    layout = 'compact',
     rows = rows,
     footer = {
       { key = 'Enter', text = 'rename' },
@@ -148,6 +149,7 @@ local function render(ui, value)
 
   local lines = {}
   local highlights = {}
+  local compact_layout = ui.panel and ui.panel.layout == 'compact'
 
   local function push_line(text, meta)
     table.insert(lines, text)
@@ -156,21 +158,27 @@ local function render(ui, value)
     end
   end
 
-  for _, row in ipairs(ui.panel.rows or {}) do
-    local highlight = row.highlight
-    if row.kind == 'context' then
-      highlight = 'CosmicUiPanelSection'
+  local prompt_line = ui.prompt .. value
+
+  if compact_layout then
+    push_line(prompt_line)
+  else
+    for _, row in ipairs(ui.panel.rows or {}) do
+      local highlight = row.highlight
+      if row.kind == 'context' then
+        highlight = 'CosmicUiPanelSection'
+      end
+
+      push_line(' ' .. (row.text or '') .. ' ', { highlight = highlight })
     end
 
-    push_line(' ' .. (row.text or '') .. ' ', { highlight = highlight })
+    push_line('')
+    push_line(prompt_line)
   end
 
-  push_line('')
-  local prompt_line = ui.prompt .. value
-  push_line(prompt_line)
   local prompt_row = #lines
 
-  if ui.panel.footer and #ui.panel.footer > 0 then
+  if not compact_layout and ui.panel.footer and #ui.panel.footer > 0 then
     push_line('')
     local footer_text, spans = footer_line(ui.panel.footer)
     for _, span in ipairs(spans) do

@@ -172,6 +172,22 @@ describe('cosmic-ui.rename.ui', function()
     assert.are.same(before, after)
   end)
 
+  it('renders the default compact rename buffer as a single prompt line', function()
+    stub_rename_context('current_name')
+
+    local ui = require('cosmic-ui.rename.ui')
+
+    ui.open({
+      default_value = 'next_name',
+    })
+
+    local lines = vim.api.nvim_buf_get_lines(vim.api.nvim_get_current_buf(), 0, -1, false)
+
+    assert.are.same({ '> next_name' }, lines)
+    assert.is_false(vim.tbl_contains(lines, ' Current: current_name '))
+    assert.is_false(vim.tbl_contains(lines, ' Enter:rename  Esc:cancel '))
+  end)
+
   it('preserves explicit window width and height overrides after render', function()
     stub_rename_context('current_name')
 
