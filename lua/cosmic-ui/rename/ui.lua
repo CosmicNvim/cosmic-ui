@@ -403,7 +403,6 @@ M.open = function(opts)
     pcall(vim.api.nvim_del_augroup_by_id, augroup)
     window.safe_close_win(win)
     window.safe_delete_buf(buf, { force = true })
-    panel.restore_focus(ui.origin_win)
   end
 
   local function submit()
@@ -412,7 +411,8 @@ M.open = function(opts)
 
     if not result.ok then
       ui.validation_reason = result.reason
-      render(ui, model.extract_value(prompt, raw_line))
+      ui.value = model.extract_value(prompt, raw_line)
+      ui.panel = build_panel_model(ui.curr_name, ui.validation_reason)
       return
     end
 

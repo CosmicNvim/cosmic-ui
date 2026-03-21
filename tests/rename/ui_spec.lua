@@ -25,22 +25,6 @@ describe('cosmic-ui.rename.ui', function()
   local original_get_clients
   local original_expand
 
-  local function collect_highlights(bufnr, ns)
-    local marks = vim.api.nvim_buf_get_extmarks(bufnr, ns, 0, -1, { details = true })
-    local collected = {}
-
-    for _, mark in ipairs(marks) do
-      table.insert(collected, {
-        lnum = mark[2],
-        col = mark[3],
-        end_col = mark[4].end_col,
-        hl_group = mark[4].hl_group,
-      })
-    end
-
-    return collected
-  end
-
   local function stub_rename_context(current_name)
     original_get_clients = vim.lsp.get_clients
     original_expand = vim.fn.expand
@@ -135,8 +119,9 @@ describe('cosmic-ui.rename.ui', function()
     })
 
     local buf = vim.api.nvim_get_current_buf()
+    assert.are.same({ '> draft' }, vim.api.nvim_buf_get_lines(buf, 0, -1, false))
     vim.bo[buf].modifiable = true
-    vim.api.nvim_buf_set_text(buf, 2, 7, 2, 7, { '2' })
+    vim.api.nvim_buf_set_text(buf, 0, 7, 0, 7, { '2' })
     vim.bo[buf].modifiable = false
 
     press('<CR>')
@@ -172,7 +157,7 @@ describe('cosmic-ui.rename.ui', function()
     assert.are.same(before, after)
   end)
 
-  it('renders the default compact rename buffer as a single prompt line', function()
+  it('renders the compact rename buffer as a single editable prompt line', function()
     stub_rename_context('current_name')
 
     local ui = require('cosmic-ui.rename.ui')
@@ -186,6 +171,34 @@ describe('cosmic-ui.rename.ui', function()
     assert.are.same({ '> next_name' }, lines)
     assert.is_false(vim.tbl_contains(lines, ' Current: current_name '))
     assert.is_false(vim.tbl_contains(lines, ' Enter:rename  Esc:cancel '))
+  end)
+
+  it('keeps the cursor on the prompt line after a rejected unchanged submit', function()
+    stub_rename_context('current_name')
+
+    local ui = require('cosmic-ui.rename.ui')
+
+    ui.open({
+      default_value = 'current_name',
+    })
+
+    local win = vim.api.nvim_get_current_win()
+    local prompt_len = #'> '
+
+    vim.api.nvim_win_set_cursor(win, { 1, prompt_len + 2 })
+
+    press('<CR>')
+    vim.wait(1000, function()
+      local cursor = vim.api.nvim_win_get_cursor(win)
+      return cursor[1] == 1 and cursor[2] >= prompt_len
+    end)
+
+    local cursor = vim.api.nvim_win_get_cursor(win)
+    local lines = vim.api.nvim_buf_get_lines(vim.api.nvim_get_current_buf(), 0, -1, false)
+
+    assert.are.same({ '> current_name' }, lines)
+    assert.are.equal(1, cursor[1])
+    assert.is_true(cursor[2] >= prompt_len)
   end)
 
   it('preserves explicit window width and height overrides after render', function()
@@ -207,62 +220,7 @@ describe('cosmic-ui.rename.ui', function()
     assert.are.equal(7, cfg.height)
   end)
 
-  it('highlights footer helpers from the first character', function()
-    stub_rename_context('current_name')
-
-    local ui = require('cosmic-ui.rename.ui')
-    local ns = vim.api.nvim_get_namespaces()['cosmic-ui-rename-panel']
-
-    ui.open({
-      default_value = 'next_name',
-    })
-
-    local buf = vim.api.nvim_get_current_buf()
-    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-    local marks = collect_highlights(buf, ns)
-    local footer_marks = {}
-
-    assert.are.equal(' Enter:rename  Esc:cancel ', lines[#lines])
-
-    for _, mark in ipairs(marks) do
-      if mark.lnum == #lines - 1 then
-        table.insert(footer_marks, mark)
-      end
-    end
-
-    table.sort(footer_marks, function(left, right)
-      return left.col < right.col
-    end)
-
-    assert.are.same({
-      {
-        lnum = #lines - 1,
-        col = 1,
-        end_col = 6,
-        hl_group = 'CosmicUiPanelHintKey',
-      },
-      {
-        lnum = #lines - 1,
-        col = 7,
-        end_col = 13,
-        hl_group = 'CosmicUiPanelHintText',
-      },
-      {
-        lnum = #lines - 1,
-        col = 15,
-        end_col = 18,
-        hl_group = 'CosmicUiPanelHintKey',
-      },
-      {
-        lnum = #lines - 1,
-        col = 19,
-        end_col = 25,
-        hl_group = 'CosmicUiPanelHintText',
-      },
-    }, footer_marks)
-  end)
-
-  it('rejects empty submit from the panel without dispatching rename', function()
+  it('rejects empty submit without adding validation rows', function()
     stub_rename_context('current_name')
 
     local ui = require('cosmic-ui.rename.ui')
@@ -278,20 +236,15 @@ describe('cosmic-ui.rename.ui', function()
     press('<CR>')
     vim.wait(1000, function()
       local lines = vim.api.nvim_buf_get_lines(vim.api.nvim_get_current_buf(), 0, -1, false)
-      return vim.tbl_contains(lines, ' Name cannot be empty ')
+      return #lines == 1 and lines[1] == '> '
     end)
 
     assert.are.equal(0, submissions)
     assert.is_true(vim.api.nvim_win_get_config(vim.api.nvim_get_current_win()).relative ~= '')
-    assert.is_true(
-      vim.tbl_contains(
-        vim.api.nvim_buf_get_lines(vim.api.nvim_get_current_buf(), 0, -1, false),
-        ' Name cannot be empty '
-      )
-    )
+    assert.are.same({ '> ' }, vim.api.nvim_buf_get_lines(vim.api.nvim_get_current_buf(), 0, -1, false))
   end)
 
-  it('rejects unchanged submit from the panel without dispatching rename', function()
+  it('rejects unchanged submit without rendering helper rows', function()
     stub_rename_context('current_name')
 
     local ui = require('cosmic-ui.rename.ui')
@@ -307,14 +260,12 @@ describe('cosmic-ui.rename.ui', function()
     press('<CR>')
     vim.wait(1000, function()
       local lines = vim.api.nvim_buf_get_lines(vim.api.nvim_get_current_buf(), 0, -1, false)
-      return vim.tbl_contains(lines, ' Name is unchanged ')
+      return #lines == 1 and lines[1] == '> current_name'
     end)
 
     assert.are.equal(0, submissions)
     assert.is_true(vim.api.nvim_win_get_config(vim.api.nvim_get_current_win()).relative ~= '')
-    assert.is_true(
-      vim.tbl_contains(vim.api.nvim_buf_get_lines(vim.api.nvim_get_current_buf(), 0, -1, false), ' Name is unchanged ')
-    )
+    assert.are.same({ '> current_name' }, vim.api.nvim_buf_get_lines(vim.api.nvim_get_current_buf(), 0, -1, false))
   end)
 
   it('restores focus to the origin window on cancel', function()
