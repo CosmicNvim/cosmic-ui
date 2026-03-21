@@ -1,22 +1,6 @@
 describe('cosmic-ui.codeactions.ui', function()
   local lifecycle
 
-  local function collect_highlights(bufnr, ns)
-    local marks = vim.api.nvim_buf_get_extmarks(bufnr, ns, 0, -1, { details = true })
-    local collected = {}
-
-    for _, mark in ipairs(marks) do
-      table.insert(collected, {
-        lnum = mark[2],
-        col = mark[3],
-        end_col = mark[4].end_col,
-        hl_group = mark[4].hl_group,
-      })
-    end
-
-    return collected
-  end
-
   before_each(function()
     lifecycle = require('cosmic-ui.codeactions.ui.lifecycle')
     lifecycle.close_current()
@@ -80,47 +64,23 @@ describe('cosmic-ui.codeactions.ui', function()
     assert.are.same({ '<Esc>' }, seen)
   end)
 
-  it('highlights footer helpers from the first character', function()
+  it('does not render in-buffer footer helper rows', function()
     local ui = require('cosmic-ui.codeactions.ui')
 
     ui.open({
       [1] = {
         client = { id = 1, name = 'lua_ls' },
-        result = {},
+        result = {
+          { title = 'Fix' },
+        },
       },
     }, {})
 
     local state = lifecycle.get_state()
     local lines = vim.api.nvim_buf_get_lines(state.ui.buf, 0, -1, false)
-    local marks = collect_highlights(state.ui.buf, state.ui.ns)
-    local footer_marks = {}
 
-    assert.are.equal(' Esc:close ', lines[#lines])
-
-    for _, mark in ipairs(marks) do
-      if mark.lnum == #lines - 1 then
-        table.insert(footer_marks, mark)
-      end
-    end
-
-    table.sort(footer_marks, function(left, right)
-      return left.col < right.col
-    end)
-
-    assert.are.same({
-      {
-        lnum = #lines - 1,
-        col = 1,
-        end_col = 4,
-        hl_group = 'CosmicUiPanelHintKey',
-      },
-      {
-        lnum = #lines - 1,
-        col = 5,
-        end_col = 10,
-        hl_group = 'CosmicUiPanelHintText',
-      },
-    }, footer_marks)
+    assert.is_false(vim.tbl_contains(lines, ' Esc:close '))
+    assert.is_false(vim.tbl_contains(lines, ' Enter:apply  Esc:close '))
   end)
 
   it('preserves configured min width and border metadata on the float', function()

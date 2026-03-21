@@ -19,20 +19,8 @@ local function dismiss_current()
 end
 
 local function build_panel_model(built)
-  local footer = {
-    { key = 'Enter', text = 'apply' },
-    { key = 'Esc', text = 'close' },
-  }
-
-  if #built.actions == 0 then
-    footer = {
-      { key = 'Esc', text = 'close' },
-    }
-  end
-
   return panel.prepare({
     rows = built.rows,
-    footer = footer,
     selected = (#built.actions > 0) and 1 or nil,
   })
 end
