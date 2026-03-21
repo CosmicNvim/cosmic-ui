@@ -157,7 +157,7 @@ describe('cosmic-ui.codeactions.ui', function()
 
     assert.is_false(vim.tbl_contains(lines, ' Code Actions '))
     assert.is_false(vim.tbl_contains(lines, ' 2 actions '))
-    assert.is_true(vim.tbl_contains(lines, ' lua_ls '))
+    assert.is_true(vim.tbl_contains(vim.tbl_map(vim.trim, lines), 'lua_ls'))
     assert.is_true(vim.tbl_contains(lines, ' Fix A '))
     assert.is_true(vim.tbl_contains(lines, ' Fix B '))
   end)
@@ -182,6 +182,54 @@ describe('cosmic-ui.codeactions.ui', function()
     assert.is_true(vim.tbl_contains(lines, ' Fix B '))
     assert.is_false(vim.tbl_contains(lines, ' 1. Fix A '))
     assert.is_false(vim.tbl_contains(lines, ' 2. Fix B '))
+  end)
+
+  it('centers section headers and inserts one blank row between client sections', function()
+    local ui = require('cosmic-ui.codeactions.ui')
+
+    ui.open({
+      [2] = {
+        client = { id = 2, name = 'zeta' },
+        result = {
+          { title = 'Fix trailing spaces' },
+        },
+      },
+      [1] = {
+        client = { id = 1, name = 'alpha' },
+        result = {
+          { title = 'Organize Imports' },
+          { title = 'Extract Function' },
+        },
+      },
+    }, {})
+
+    local state = lifecycle.get_state()
+    local lines = vim.api.nvim_buf_get_lines(state.ui.buf, 0, -1, false)
+
+    local function find_trimmed(text)
+      for idx, line in ipairs(lines) do
+        if vim.trim(line) == text then
+          return idx, line
+        end
+      end
+      return nil, nil
+    end
+
+    local alpha_idx, alpha_line = find_trimmed('alpha')
+    local zeta_idx, zeta_line = find_trimmed('zeta')
+
+    assert.is_not_nil(alpha_idx)
+    assert.is_not_nil(zeta_idx)
+    assert.are.equal('', lines[zeta_idx - 1])
+
+    local function assert_centered(line, label)
+      local left_pad, text, right_pad = line:match('^(%s*)(.-)(%s*)$')
+      assert.are.equal(label, text)
+      assert.is_true(math.abs(#left_pad - #right_pad) <= 1)
+    end
+
+    assert_centered(alpha_line, 'alpha')
+    assert_centered(zeta_line, 'zeta')
   end)
 
   it('does not reopen a dismissed loading panel when ready-state results arrive for the same request', function()

@@ -63,58 +63,104 @@ M.render = function(ui)
   M.ensure_selection(ui)
 
   local panel = ui.panel or {}
-  local lines = {}
-  local highlights = {}
+  local line_specs = {}
   local action_line_by_idx = {}
-  local max_width = 30
+  local raw_max_width = 30
   local action_idx = 0
+  local seen_section = false
 
-  local function push_line(text, meta)
-    table.insert(lines, text)
-    if meta then
-      highlights[#lines] = meta
-    end
-    max_width = math.max(max_width, vim.fn.strdisplaywidth(text))
+  local function push_line(spec)
+    spec = spec or { text = '' }
+    table.insert(line_specs, spec)
+    raw_max_width = math.max(raw_max_width, vim.fn.strdisplaywidth(spec.text or ''))
   end
 
   if panel.title and panel.title ~= '' then
-    push_line(' ' .. panel.title .. ' ', { highlight = panel.title_highlight or 'CosmicUiPanelTitle' })
+    push_line({
+      text = ' ' .. panel.title .. ' ',
+      meta = { highlight = panel.title_highlight or 'CosmicUiPanelTitle' },
+    })
   end
   if panel.subtitle and panel.subtitle ~= '' then
-    push_line(' ' .. panel.subtitle .. ' ', { highlight = panel.subtitle_highlight or 'CosmicUiPanelSubtitle' })
+    push_line({
+      text = ' ' .. panel.subtitle .. ' ',
+      meta = { highlight = panel.subtitle_highlight or 'CosmicUiPanelSubtitle' },
+    })
   end
 
-  if #lines > 0 and panel.rows and #panel.rows > 0 then
-    push_line('')
+  if #line_specs > 0 and panel.rows and #panel.rows > 0 then
+    push_line({ text = '' })
   end
 
   for _, row in ipairs(panel.rows or {}) do
     if row.kind == 'section' or row.kind == 'separator' then
-      push_line(' ' .. row.text .. ' ', { highlight = 'CosmicUiPanelSection' })
+      if seen_section then
+        push_line({ text = '' })
+      end
+      push_line({
+        text = row.text or '',
+        center = true,
+        meta = { highlight = 'CosmicUiPanelSection' },
+      })
+      seen_section = true
     elseif row.kind == 'state' then
-      push_line(' ' .. row.text .. ' ', { highlight = row.highlight or 'CosmicUiPanelStateInfo' })
+      push_line({
+        text = ' ' .. row.text .. ' ',
+        meta = { highlight = row.highlight or 'CosmicUiPanelStateInfo' },
+      })
     elseif row.kind == 'action' then
       action_idx = action_idx + 1
-      push_line(' ' .. row.text .. ' ')
-      action_line_by_idx[action_idx] = #lines
+      push_line({ text = ' ' .. row.text .. ' ' })
+      action_line_by_idx[action_idx] = #line_specs
     else
-      push_line(' ' .. (row.text or '') .. ' ')
+      push_line({ text = ' ' .. (row.text or '') .. ' ' })
     end
   end
 
   if panel.footer and #panel.footer > 0 then
-    if #lines > 0 then
-      push_line('')
+    if #line_specs > 0 then
+      push_line({ text = '' })
     end
     local footer_text, spans = footer_line(panel.footer)
     for _, span in ipairs(spans) do
       span.start_col = span.start_col + 1
       span.end_col = span.end_col + 1
     end
-    push_line(' ' .. footer_text .. ' ', { spans = spans })
+    push_line({
+      text = ' ' .. footer_text .. ' ',
+      meta = { spans = spans },
+    })
   end
 
-  local width, height = clamp_ui_size(math.max(max_width, (ui.min_width or 30) + 2), math.max(#lines, 1))
+  local width, height = clamp_ui_size(math.max(raw_max_width, (ui.min_width or 30) + 2), math.max(#line_specs, 1))
+
+  local lines = {}
+  local highlights = {}
+
+  local function finalize_text(spec)
+    local text = spec.text or ''
+    if not spec.center then
+      return text
+    end
+
+    local text_width = vim.fn.strdisplaywidth(text)
+    if text_width >= width then
+      return text
+    end
+
+    local total_padding = width - text_width
+    local left_padding = math.floor(total_padding / 2)
+    local right_padding = total_padding - left_padding
+    return string.rep(' ', left_padding) .. text .. string.rep(' ', right_padding)
+  end
+
+  for idx, spec in ipairs(line_specs) do
+    lines[idx] = finalize_text(spec)
+    if spec.meta then
+      highlights[idx] = spec.meta
+    end
+  end
+
   local indicator = nil
   if #ui.model.actions > 0 then
     indicator = ('(%d/%d)'):format(ui.selected or 0, #ui.model.actions)
