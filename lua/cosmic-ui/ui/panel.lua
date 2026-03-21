@@ -8,16 +8,28 @@ local function normalize_footer_entry(entry)
     return {
       key = entry.key or entry[1] or '',
       text = entry.text or entry[2] or '',
+      key_highlight = entry.key_highlight or 'CosmicUiPanelHintKey',
+      text_highlight = entry.text_highlight or 'CosmicUiPanelHintText',
     }
   end
 
   local raw = tostring(entry or '')
   local key, text = raw:match('^([^:]+):%s*(.+)$')
   if key then
-    return { key = key, text = text }
+    return {
+      key = key,
+      text = text,
+      key_highlight = 'CosmicUiPanelHintKey',
+      text_highlight = 'CosmicUiPanelHintText',
+    }
   end
 
-  return { key = raw, text = '' }
+  return {
+    key = raw,
+    text = '',
+    key_highlight = 'CosmicUiPanelHintKey',
+    text_highlight = 'CosmicUiPanelHintText',
+  }
 end
 
 local function normalize_footer(entries)
@@ -72,6 +84,8 @@ function M.build(opts)
   return {
     title = opts.title or '',
     subtitle = opts.subtitle or '',
+    title_highlight = 'CosmicUiPanelTitle',
+    subtitle_highlight = 'CosmicUiPanelSubtitle',
     footer = normalize_footer(opts.footer),
     rows = rows,
     selected = normalize_selected(opts.selected, rows),
