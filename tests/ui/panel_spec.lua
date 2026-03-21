@@ -1,0 +1,8 @@
+describe("cosmic-ui.ui.panel", function()
+  it("builds a standard empty state row", function()
+    local states = require("cosmic-ui.ui.states")
+    local row = states.empty("No code actions found")
+    assert.are.equal("empty", row.state)
+    assert.are.equal("No code actions found", row.text)
+  end)
+end)
