@@ -1,27 +1,27 @@
-describe("cosmic-ui.rename.model", function()
-  it("rejects empty submissions without dispatching rename", function()
-    local model = require("cosmic-ui.rename.model")
-    local result = model.normalize_submission("> ", "> ", "> ")
+describe('cosmic-ui.rename.model', function()
+  it('rejects empty submissions without dispatching rename', function()
+    local model = require('cosmic-ui.rename.model')
+    local result = model.normalize_submission('> ', '> ', '> ')
 
-    assert.are.same({ ok = false, reason = "empty" }, result)
+    assert.are.same({ ok = false, reason = 'empty' }, result)
   end)
 
-  it("rejects unchanged submissions", function()
-    local model = require("cosmic-ui.rename.model")
-    local result = model.normalize_submission("> ", "> current_name", "current_name")
+  it('rejects unchanged submissions', function()
+    local model = require('cosmic-ui.rename.model')
+    local result = model.normalize_submission('> ', '> current_name', 'current_name')
 
-    assert.are.same({ ok = false, reason = "unchanged" }, result)
+    assert.are.same({ ok = false, reason = 'unchanged' }, result)
   end)
 
-  it("extracts the submitted value from the prompt line", function()
-    local model = require("cosmic-ui.rename.model")
+  it('extracts the submitted value from the prompt line', function()
+    local model = require('cosmic-ui.rename.model')
 
-    assert.are.equal("next_name", model.extract_value("> ", "> next_name"))
-    assert.are.equal("raw_name", model.extract_value("> ", "raw_name"))
+    assert.are.equal('next_name', model.extract_value('> ', '> next_name'))
+    assert.are.equal('raw_name', model.extract_value('> ', 'raw_name'))
   end)
 end)
 
-describe("cosmic-ui.rename.ui", function()
+describe('cosmic-ui.rename.ui', function()
   local original_get_clients
   local original_expand
 
@@ -31,12 +31,12 @@ describe("cosmic-ui.rename.ui", function()
 
     vim.lsp.get_clients = function()
       return {
-        { id = 1, name = "lua_ls" },
+        { id = 1, name = 'lua_ls' },
       }
     end
 
     vim.fn.expand = function(expr)
-      if expr == "<cword>" then
+      if expr == '<cword>' then
         return current_name
       end
 
@@ -57,7 +57,7 @@ describe("cosmic-ui.rename.ui", function()
   end
 
   local function press(keys)
-    vim.api.nvim_feedkeys(vim.keycode(keys), "xt", false)
+    vim.api.nvim_feedkeys(vim.keycode(keys), 'xt', false)
   end
 
   after_each(function()
@@ -65,26 +65,26 @@ describe("cosmic-ui.rename.ui", function()
 
     for _, win in ipairs(vim.api.nvim_list_wins()) do
       local config = vim.api.nvim_win_get_config(win)
-      if config.relative ~= "" then
+      if config.relative ~= '' then
         pcall(vim.api.nvim_win_close, win, true)
       end
     end
 
-    vim.cmd("silent! only")
+    vim.cmd('silent! only')
   end)
 
-  it("restores focus to the origin window on submit", function()
-    stub_rename_context("current_name")
+  it('restores focus to the origin window on submit', function()
+    stub_rename_context('current_name')
 
-    local ui = require("cosmic-ui.rename.ui")
+    local ui = require('cosmic-ui.rename.ui')
     local origin_win = vim.api.nvim_get_current_win()
     local submitted
 
-    vim.cmd("split")
+    vim.cmd('split')
     vim.api.nvim_set_current_win(origin_win)
 
     ui.open({
-      default_value = "next_name",
+      default_value = 'next_name',
       on_submit = function(new_name)
         submitted = {
           name = new_name,
@@ -93,47 +93,47 @@ describe("cosmic-ui.rename.ui", function()
       end,
     })
 
-    press("<CR>")
+    press('<CR>')
     vim.wait(1000, function()
       return submitted ~= nil
     end)
 
     assert.are.equal(origin_win, vim.api.nvim_get_current_win())
     assert.are.same({
-      name = "next_name",
+      name = 'next_name',
       win = origin_win,
     }, submitted)
   end)
 
-  it("allows editing the prompt line before submit", function()
-    stub_rename_context("current_name")
+  it('allows editing the prompt line before submit', function()
+    stub_rename_context('current_name')
 
-    local ui = require("cosmic-ui.rename.ui")
+    local ui = require('cosmic-ui.rename.ui')
     local submitted
 
     ui.open({
-      default_value = "draft",
+      default_value = 'draft',
       on_submit = function(new_name)
         submitted = new_name
       end,
     })
 
-    vim.cmd("normal! A2")
-    press("<CR>")
+    vim.cmd('normal! A2')
+    press('<CR>')
     vim.wait(1000, function()
       return submitted ~= nil
     end)
 
-    assert.are.equal("draft2", submitted)
+    assert.are.equal('draft2', submitted)
   end)
 
-  it("preserves explicit window width and height overrides after render", function()
-    stub_rename_context("current_name")
+  it('preserves explicit window width and height overrides after render', function()
+    stub_rename_context('current_name')
 
-    local ui = require("cosmic-ui.rename.ui")
+    local ui = require('cosmic-ui.rename.ui')
 
     ui.open({
-      default_value = "next_name",
+      default_value = 'next_name',
       window = {
         width = 52,
         height = 7,
@@ -146,77 +146,78 @@ describe("cosmic-ui.rename.ui", function()
     assert.are.equal(7, cfg.height)
   end)
 
-  it("rejects empty submit from the panel without dispatching rename", function()
-    stub_rename_context("current_name")
+  it('rejects empty submit from the panel without dispatching rename', function()
+    stub_rename_context('current_name')
 
-    local ui = require("cosmic-ui.rename.ui")
+    local ui = require('cosmic-ui.rename.ui')
     local submissions = 0
 
     ui.open({
-      default_value = "",
+      default_value = '',
       on_submit = function()
         submissions = submissions + 1
       end,
     })
 
-    press("<CR>")
+    press('<CR>')
     vim.wait(1000, function()
       local lines = vim.api.nvim_buf_get_lines(vim.api.nvim_get_current_buf(), 0, -1, false)
-      return vim.tbl_contains(lines, " Name cannot be empty ")
+      return vim.tbl_contains(lines, ' Name cannot be empty ')
     end)
 
     assert.are.equal(0, submissions)
-    assert.is_true(vim.api.nvim_win_get_config(vim.api.nvim_get_current_win()).relative ~= "")
-    assert.is_true(vim.tbl_contains(
-      vim.api.nvim_buf_get_lines(vim.api.nvim_get_current_buf(), 0, -1, false),
-      " Name cannot be empty "
-    ))
+    assert.is_true(vim.api.nvim_win_get_config(vim.api.nvim_get_current_win()).relative ~= '')
+    assert.is_true(
+      vim.tbl_contains(
+        vim.api.nvim_buf_get_lines(vim.api.nvim_get_current_buf(), 0, -1, false),
+        ' Name cannot be empty '
+      )
+    )
   end)
 
-  it("rejects unchanged submit from the panel without dispatching rename", function()
-    stub_rename_context("current_name")
+  it('rejects unchanged submit from the panel without dispatching rename', function()
+    stub_rename_context('current_name')
 
-    local ui = require("cosmic-ui.rename.ui")
+    local ui = require('cosmic-ui.rename.ui')
     local submissions = 0
 
     ui.open({
-      default_value = "current_name",
+      default_value = 'current_name',
       on_submit = function()
         submissions = submissions + 1
       end,
     })
 
-    press("<CR>")
+    press('<CR>')
     vim.wait(1000, function()
       local lines = vim.api.nvim_buf_get_lines(vim.api.nvim_get_current_buf(), 0, -1, false)
-      return vim.tbl_contains(lines, " Name is unchanged ")
+      return vim.tbl_contains(lines, ' Name is unchanged ')
     end)
 
     assert.are.equal(0, submissions)
-    assert.is_true(vim.api.nvim_win_get_config(vim.api.nvim_get_current_win()).relative ~= "")
-    assert.is_true(vim.tbl_contains(
-      vim.api.nvim_buf_get_lines(vim.api.nvim_get_current_buf(), 0, -1, false),
-      " Name is unchanged "
-    ))
+    assert.is_true(vim.api.nvim_win_get_config(vim.api.nvim_get_current_win()).relative ~= '')
+    assert.is_true(
+      vim.tbl_contains(vim.api.nvim_buf_get_lines(vim.api.nvim_get_current_buf(), 0, -1, false), ' Name is unchanged ')
+    )
   end)
 
-  it("restores focus to the origin window on cancel", function()
-    stub_rename_context("current_name")
+  it('restores focus to the origin window on cancel', function()
+    stub_rename_context('current_name')
 
-    local ui = require("cosmic-ui.rename.ui")
+    local ui = require('cosmic-ui.rename.ui')
     local origin_win = vim.api.nvim_get_current_win()
 
-    vim.cmd("split")
+    vim.cmd('split')
     vim.api.nvim_set_current_win(origin_win)
 
     ui.open({
-      default_value = "next_name",
+      default_value = 'next_name',
       on_submit = function()
-        error("rename should not submit on cancel")
+        error('rename should not submit on cancel')
       end,
     })
 
-    press("<Esc>")
+    press('<Esc>')
     vim.wait(1000, function()
       return vim.api.nvim_get_current_win() == origin_win
     end)

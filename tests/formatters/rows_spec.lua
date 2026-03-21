@@ -1,4 +1,4 @@
-describe("cosmic-ui.formatters.ui.rows", function()
+describe('cosmic-ui.formatters.ui.rows', function()
   local function find_row(rows, id)
     for _, row in ipairs(rows) do
       if row.id == id then
@@ -10,7 +10,7 @@ describe("cosmic-ui.formatters.ui.rows", function()
   end
 
   local function rstrip(text)
-    return (text:gsub("%s+$", ""))
+    return (text:gsub('%s+$', ''))
   end
 
   local function collect_highlights(bufnr, ns)
@@ -29,109 +29,109 @@ describe("cosmic-ui.formatters.ui.rows", function()
     return collected
   end
 
-  it("renders conform-unavailable rows with explanatory text", function()
-    local rows = require("cosmic-ui.formatters.ui.rows")
+  it('renders conform-unavailable rows with explanatory text', function()
+    local rows = require('cosmic-ui.formatters.ui.rows')
     local built = rows.build_rows({
-      conform = { available = false, reason = "conform unavailable", formatters = {}, fallback = {} },
+      conform = { available = false, reason = 'conform unavailable', formatters = {}, fallback = {} },
       lsp_clients = {},
-    }, { conform = "C", lsp = "L", file = "F", filetype = "lua" }, { unavailable = "!" })
+    }, { conform = 'C', lsp = 'L', file = 'F', filetype = 'lua' }, { unavailable = '!' })
 
-    local row = find_row(built, "conform_unavailable")
+    local row = find_row(built, 'conform_unavailable')
     assert.are.same({
-      id = "conform_unavailable",
-      text = "! C Conform unavailable: conform unavailable",
+      id = 'conform_unavailable',
+      text = '! C Conform unavailable: conform unavailable',
       toggleable = false,
-      kind = "info",
-      status = "unavailable",
-      status_icon = "!",
-      source_icon = "C",
-      reason = "conform unavailable",
+      kind = 'info',
+      status = 'unavailable',
+      status_icon = '!',
+      source_icon = 'C',
+      reason = 'conform unavailable',
     }, row)
   end)
 
-  it("renders empty backend rows with explicit source labels", function()
-    local rows = require("cosmic-ui.formatters.ui.rows")
+  it('renders empty backend rows with explicit source labels', function()
+    local rows = require('cosmic-ui.formatters.ui.rows')
     local built = rows.build_rows({
       conform = {
         available = true,
         reason = nil,
         formatters = {},
-        fallback = { display_global_mode = "fallback" },
+        fallback = { display_global_mode = 'fallback' },
       },
       lsp_clients = {},
-    }, { conform = "C", lsp = "L", file = "F", filetype = "lua" }, { unavailable = "!" })
+    }, { conform = 'C', lsp = 'L', file = 'F', filetype = 'lua' }, { unavailable = '!' })
 
     assert.are.same({
-      id = "conform_empty",
-      text = "! C Conform: no formatters available",
+      id = 'conform_empty',
+      text = '! C Conform: no formatters available',
       toggleable = false,
-      kind = "info",
-      status = "unavailable",
-      status_icon = "!",
-      source_icon = "C",
-    }, find_row(built, "conform_empty"))
+      kind = 'info',
+      status = 'unavailable',
+      status_icon = '!',
+      source_icon = 'C',
+    }, find_row(built, 'conform_empty'))
 
     assert.are.same({
-      id = "lsp_empty",
-      text = "! L LSP: no attached clients",
+      id = 'lsp_empty',
+      text = '! L LSP: no attached clients',
       toggleable = false,
-      kind = "info",
-      status = "unavailable",
-      status_icon = "!",
-      source_icon = "L",
-    }, find_row(built, "lsp_empty"))
+      kind = 'info',
+      status = 'unavailable',
+      status_icon = '!',
+      source_icon = 'L',
+    }, find_row(built, 'lsp_empty'))
   end)
 
-  it("stores shared section metadata separately from section text", function()
-    local rows = require("cosmic-ui.formatters.ui.rows")
+  it('stores shared section metadata separately from section text', function()
+    local rows = require('cosmic-ui.formatters.ui.rows')
     local built = rows.build_rows({
       conform = {
         available = true,
         reason = nil,
         formatters = {
-          { name = "stylua", enabled = true },
+          { name = 'stylua', enabled = true },
         },
         fallback = {
-          display_global_mode = "never",
-          display_specific_mode = "fallback",
+          display_global_mode = 'never',
+          display_specific_mode = 'fallback',
         },
       },
       lsp_clients = {
-        { name = "lua_ls", available = true, enabled = true },
+        { name = 'lua_ls', available = true, enabled = true },
       },
-    }, { conform = "C", lsp = "L", file = "F", filetype = "lua" }, {
-      enabled = "+",
-      disabled = "-",
-      unavailable = "!",
+    }, { conform = 'C', lsp = 'L', file = 'F', filetype = 'lua' }, {
+      enabled = '+',
+      disabled = '-',
+      unavailable = '!',
     })
 
     assert.are.same({
-      id = "section_conform",
-      text = "Conform",
+      id = 'section_conform',
+      text = 'Conform',
       toggleable = false,
-      kind = "section",
-    }, find_row(built, "section_conform"))
+      kind = 'section',
+    }, find_row(built, 'section_conform'))
 
     assert.are.same({
-      id = "section_lsp",
-      text = "LSP",
-      subtitle = "fallback",
+      id = 'section_lsp',
+      text = 'LSP',
+      subtitle = 'fallback',
       toggleable = false,
-      kind = "section",
-    }, find_row(built, "section_lsp"))
+      kind = 'section',
+    }, find_row(built, 'section_lsp'))
   end)
 
-  it("renders section subtitles and shared footer highlights through the formatter panel", function()
-    local constants = require("cosmic-ui.formatters.constants")
-    local highlights = require("cosmic-ui.formatters.ui.highlights")
-    local input = require("cosmic-ui.formatters.ui.input")
-    local render = require("cosmic-ui.formatters.ui.render")
+  it('renders section subtitles and shared footer highlights through the formatter panel', function()
+    local constants = require('cosmic-ui.formatters.constants')
+    local highlights = require('cosmic-ui.formatters.ui.highlights')
+    local input = require('cosmic-ui.formatters.ui.input')
+    local render = require('cosmic-ui.formatters.ui.render')
 
     local buf = vim.api.nvim_create_buf(false, true)
     local ui = {
       buf = buf,
       win = vim.api.nvim_get_current_win(),
-      scope = "buffer",
+      scope = 'buffer',
       target_bufnr = 0,
       selected = nil,
       rows = {},
@@ -145,7 +145,7 @@ describe("cosmic-ui.formatters.ui.rows", function()
     local deps = {
       logger = {},
       close_fn = function()
-        error("render should not close the panel")
+        error('render should not close the panel')
       end,
       ui_state = {},
       constants = constants,
@@ -156,31 +156,31 @@ describe("cosmic-ui.formatters.ui.rows", function()
         end,
         make_icons = function()
           return {
-            file = "F",
-            filetype = "lua",
+            file = 'F',
+            filetype = 'lua',
           }
         end,
         build_rows = function()
           return {
             {
-              id = "section_lsp",
-              kind = "section",
-              text = "LSP",
-              subtitle = "fallback",
+              id = 'section_lsp',
+              kind = 'section',
+              text = 'LSP',
+              subtitle = 'fallback',
               toggleable = false,
             },
             {
-              id = "lsp_lua_ls",
-              kind = "item",
-              text = "+ L lua_ls",
+              id = 'lsp_lua_ls',
+              kind = 'item',
+              text = '+ L lua_ls',
               toggleable = true,
-              status = "enabled",
-              status_icon = "+",
-              source_icon = "L",
+              status = 'enabled',
+              status_icon = '+',
+              source_icon = 'L',
               action = {
-                kind = "item",
-                source = "lsp",
-                name = "lua_ls",
+                kind = 'item',
+                source = 'lsp',
+                name = 'lua_ls',
               },
             },
           }
@@ -207,27 +207,30 @@ describe("cosmic-ui.formatters.ui.rows", function()
     local has_footer_text_hl = false
     local has_subtitle_hl = false
 
-    assert.are.equal(" LSP  fallback", rstrip(lines[ui.rows[1].lnum]))
-    assert.are.equal(" Tab:toggle+next  s:scope  r:reset  a:toggle all  f:format  q:close", rstrip(lines[ui.footer_lnum]))
+    assert.are.equal(' LSP  fallback', rstrip(lines[ui.rows[1].lnum]))
+    assert.are.equal(
+      ' Tab:toggle+next  s:scope  r:reset  a:toggle all  f:format  q:close',
+      rstrip(lines[ui.footer_lnum])
+    )
     assert.are.same({
-      highlight = "CosmicUiPanelHintKey",
+      highlight = 'CosmicUiPanelHintKey',
       start_col = 1,
       end_col = 4,
     }, ui.footer_spans[1])
     assert.are.same({
-      highlight = "CosmicUiPanelHintText",
+      highlight = 'CosmicUiPanelHintText',
       start_col = 5,
       end_col = 16,
     }, ui.footer_spans[2])
 
     for _, mark in ipairs(extmarks) do
-      if mark.lnum == ui.footer_lnum - 1 and mark.hl_group == "CosmicUiPanelHintKey" then
+      if mark.lnum == ui.footer_lnum - 1 and mark.hl_group == 'CosmicUiPanelHintKey' then
         has_footer_key_hl = true
       end
-      if mark.lnum == ui.footer_lnum - 1 and mark.hl_group == "CosmicUiPanelHintText" then
+      if mark.lnum == ui.footer_lnum - 1 and mark.hl_group == 'CosmicUiPanelHintText' then
         has_footer_text_hl = true
       end
-      if mark.lnum == ui.rows[1].lnum - 1 and mark.hl_group == "CosmicUiFmtSubtitle" then
+      if mark.lnum == ui.rows[1].lnum - 1 and mark.hl_group == 'CosmicUiFmtSubtitle' then
         has_subtitle_hl = true
       end
     end

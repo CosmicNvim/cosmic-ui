@@ -122,7 +122,8 @@ M.build = function(results_lsp)
       min_width = math.max(min_width, vim.fn.strdisplaywidth(empty_row.text), 30)
     end
   elseif has_partial_error then
-    local warning_text = pluralize(error_count, 'source failed to return code actions', 'sources failed to return code actions')
+    local warning_text =
+      pluralize(error_count, 'source failed to return code actions', 'sources failed to return code actions')
     table.insert(rows, 1, { kind = 'state', state = 'warn', text = warning_text })
     min_width = math.max(min_width, vim.fn.strdisplaywidth(warning_text), 30)
   end
