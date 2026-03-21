@@ -1,7 +1,7 @@
 local M = {}
 
 local function clamp_ui_size(width, height)
-  local max_width = math.max(36, math.floor(vim.o.columns * 0.6))
+  local max_width = math.max(36, math.floor(vim.o.columns * 0.9))
   local max_height = math.max(8, math.floor((vim.o.lines - vim.o.cmdheight) * 0.7))
   return math.min(width, max_width), math.min(height, max_height)
 end
@@ -110,12 +110,20 @@ M.render = function(ui)
     push_line(' ' .. footer_text .. ' ', { spans = spans })
   end
 
-  local width, height = clamp_ui_size(max_width, math.max(#lines, 1))
+  local width, height = clamp_ui_size(math.max(max_width, (ui.min_width or 30) + 2), math.max(#lines, 1))
+  local indicator = nil
+  if #ui.model.actions > 0 then
+    indicator = ('(%d/%d)'):format(ui.selected or 0, #ui.model.actions)
+  end
 
   if ui.win and vim.api.nvim_win_is_valid(ui.win) then
     local cfg = vim.api.nvim_win_get_config(ui.win)
     cfg.width = width
     cfg.height = height
+    cfg.title = ui.border and ui.border.title or nil
+    cfg.title_pos = ui.border and ui.border.title_align or nil
+    cfg.footer = indicator
+    cfg.footer_pos = indicator and 'right' or nil
     vim.api.nvim_win_set_config(ui.win, cfg)
   end
 

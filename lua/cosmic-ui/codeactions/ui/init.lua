@@ -71,12 +71,14 @@ M.open = function(results_lsp, user_opts)
     return
   end
 
+  user_opts = user_opts or {}
   local built = model.build(results_lsp)
   local existing = lifecycle.get_state().ui
 
   if existing and vim.api.nvim_buf_is_valid(existing.buf) and vim.api.nvim_win_is_valid(existing.win) then
     existing.model = built
     existing.panel = build_panel_model(built)
+    existing.min_width = math.max(existing.min_width or 30, built.min_width or 30)
     if existing.selected and existing.selected > #built.actions then
       existing.selected = nil
     end
@@ -104,9 +106,11 @@ M.open = function(results_lsp, user_opts)
     relative = 'cursor',
     row = 1,
     col = 0,
-    width = 30,
+    width = math.max((user_opts.min_width or built.min_width or 30) + 2, 32),
     height = 1,
     border = border_style,
+    title = border.title,
+    title_pos = border.title_align,
   })
   if not win then
     window.safe_delete_buf(buf, { force = true })
@@ -124,6 +128,12 @@ M.open = function(results_lsp, user_opts)
   if border.highlight then
     table.insert(winhl, 'FloatBorder:' .. border.highlight)
   end
+  if border.title_hl then
+    table.insert(winhl, 'FloatTitle:' .. border.title_hl)
+  end
+  if border.bottom_hl then
+    table.insert(winhl, 'FloatFooter:' .. border.bottom_hl)
+  end
   table.insert(winhl, 'CursorLine:Visual')
   if #winhl > 0 then
     vim.wo[win].winhl = table.concat(winhl, ',')
@@ -137,6 +147,7 @@ M.open = function(results_lsp, user_opts)
     model = built,
     panel = build_panel_model(built),
     selected = (#built.actions > 0) and 1 or nil,
+    min_width = math.max(user_opts.min_width or 30, built.min_width or 30),
     user_opts = user_opts,
     border = border,
     origin_win = origin_win,
