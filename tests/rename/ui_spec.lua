@@ -25,6 +25,22 @@ describe('cosmic-ui.rename.ui', function()
   local original_get_clients
   local original_expand
 
+  local function collect_highlights(bufnr, ns)
+    local marks = vim.api.nvim_buf_get_extmarks(bufnr, ns, 0, -1, { details = true })
+    local collected = {}
+
+    for _, mark in ipairs(marks) do
+      table.insert(collected, {
+        lnum = mark[2],
+        col = mark[3],
+        end_col = mark[4].end_col,
+        hl_group = mark[4].hl_group,
+      })
+    end
+
+    return collected
+  end
+
   local function stub_rename_context(current_name)
     original_get_clients = vim.lsp.get_clients
     original_expand = vim.fn.expand
@@ -144,6 +160,61 @@ describe('cosmic-ui.rename.ui', function()
 
     assert.are.equal(52, cfg.width)
     assert.are.equal(7, cfg.height)
+  end)
+
+  it('highlights footer helpers from the first character', function()
+    stub_rename_context('current_name')
+
+    local ui = require('cosmic-ui.rename.ui')
+    local ns = vim.api.nvim_get_namespaces()['cosmic-ui-rename-panel']
+
+    ui.open({
+      default_value = 'next_name',
+    })
+
+    local buf = vim.api.nvim_get_current_buf()
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    local marks = collect_highlights(buf, ns)
+    local footer_marks = {}
+
+    assert.are.equal(' Enter:rename  Esc:cancel ', lines[#lines])
+
+    for _, mark in ipairs(marks) do
+      if mark.lnum == #lines - 1 then
+        table.insert(footer_marks, mark)
+      end
+    end
+
+    table.sort(footer_marks, function(left, right)
+      return left.col < right.col
+    end)
+
+    assert.are.same({
+      {
+        lnum = #lines - 1,
+        col = 1,
+        end_col = 6,
+        hl_group = 'CosmicUiPanelHintKey',
+      },
+      {
+        lnum = #lines - 1,
+        col = 7,
+        end_col = 13,
+        hl_group = 'CosmicUiPanelHintText',
+      },
+      {
+        lnum = #lines - 1,
+        col = 15,
+        end_col = 18,
+        hl_group = 'CosmicUiPanelHintKey',
+      },
+      {
+        lnum = #lines - 1,
+        col = 19,
+        end_col = 25,
+        hl_group = 'CosmicUiPanelHintText',
+      },
+    }, footer_marks)
   end)
 
   it('rejects empty submit from the panel without dispatching rename', function()

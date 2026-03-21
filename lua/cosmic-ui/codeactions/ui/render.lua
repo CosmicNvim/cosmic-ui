@@ -9,28 +9,33 @@ end
 local function footer_line(entries)
   local text = ''
   local spans = {}
+  local col = 0
 
   for idx, entry in ipairs(entries or {}) do
     if idx > 1 then
       text = text .. '  '
+      col = col + 2
     end
 
-    local key_start = #text + 1
-    text = text .. entry.key
-    local key_end = #text
+    local key = entry.key or ''
+    local hint = entry.text or ''
+
+    text = text .. key
     table.insert(spans, {
       highlight = entry.key_highlight,
-      start_col = key_start,
-      end_col = key_end,
+      start_col = col,
+      end_col = col + #key,
     })
+    col = col + #key
 
-    if entry.text ~= '' then
-      text = text .. ':' .. entry.text
+    if hint ~= '' then
+      text = text .. ':' .. hint
       table.insert(spans, {
         highlight = entry.text_highlight,
-        start_col = key_end + 2,
-        end_col = #text,
+        start_col = col + 1,
+        end_col = col + 1 + #hint,
       })
+      col = col + 1 + #hint
     end
   end
 
