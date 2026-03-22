@@ -134,7 +134,7 @@ local function build_panel_model(curr_name, reason)
     rows = rows,
     footer = {
       { key = 'Enter', text = 'rename' },
-      { key = 'Esc', text = 'cancel' },
+      { key = 'Esc',   text = 'cancel' },
     },
   })
 end
@@ -312,11 +312,11 @@ M.open = function(opts)
   local prompt = opts.prompt or user_opts.prompt or '> '
   local default_value = opts.default_value or curr_name
   local on_submit = opts.on_submit
-    or default_submitter(curr_name, {
-      bufnr = target_bufnr,
-      winid = target_winid,
-      cursor = target_cursor,
-    })
+      or default_submitter(curr_name, {
+        bufnr = target_bufnr,
+        winid = target_winid,
+        cursor = target_cursor,
+      })
 
   local merged_window_opts = utils.merge({
     relative = 'cursor',
