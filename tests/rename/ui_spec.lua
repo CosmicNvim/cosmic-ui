@@ -467,6 +467,39 @@ describe('cosmic-ui.rename.ui', function()
     assert.are.same({ 1, 6 }, vim.api.nvim_win_get_cursor(origin_win))
   end)
 
+  it('closes on focus loss without restoring origin focus', function()
+    stub_rename_context('current_name')
+
+    local ui = require('cosmic-ui.rename.ui')
+    local origin_win = vim.api.nvim_get_current_win()
+
+    vim.cmd('split')
+    local other_win = vim.api.nvim_get_current_win()
+    vim.api.nvim_set_current_win(origin_win)
+
+    ui.open({
+      default_value = 'next_name',
+      on_submit = function()
+        error('rename should not submit on focus loss')
+      end,
+    })
+
+    vim.api.nvim_set_current_win(other_win)
+    vim.wait(1000, function()
+      return vim.api.nvim_get_current_win() == other_win
+    end)
+    vim.wait(300, function()
+      return false
+    end)
+
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+      local config = vim.api.nvim_win_get_config(win)
+      assert.is_false(config.relative ~= '')
+    end
+
+    assert.are.equal(other_win, vim.api.nvim_get_current_win())
+  end)
+
   it('keeps the cursor on the renamed symbol after submitting a shorter name', function()
     stub_rename_context('very_long_name')
     local ui = require('cosmic-ui.rename.ui')

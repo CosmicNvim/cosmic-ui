@@ -134,7 +134,7 @@ local function build_panel_model(curr_name, reason)
     rows = rows,
     footer = {
       { key = 'Enter', text = 'rename' },
-      { key = 'Esc',   text = 'cancel' },
+      { key = 'Esc', text = 'cancel' },
     },
   })
 end
@@ -312,11 +312,11 @@ M.open = function(opts)
   local prompt = opts.prompt or user_opts.prompt or '> '
   local default_value = opts.default_value or curr_name
   local on_submit = opts.on_submit
-      or default_submitter(curr_name, {
-        bufnr = target_bufnr,
-        winid = target_winid,
-        cursor = target_cursor,
-      })
+    or default_submitter(curr_name, {
+      bufnr = target_bufnr,
+      winid = target_winid,
+      cursor = target_cursor,
+    })
 
   local merged_window_opts = utils.merge({
     relative = 'cursor',
@@ -435,6 +435,10 @@ M.open = function(opts)
     })
   end
 
+  local function dismiss()
+    close()
+  end
+
   local function submit()
     local raw_line = vim.api.nvim_buf_get_lines(buf, ui.prompt_row - 1, ui.prompt_row, true)[1] or ''
     local result = model.normalize_submission(prompt, raw_line, curr_name)
@@ -459,13 +463,13 @@ M.open = function(opts)
   vim.api.nvim_create_autocmd({ 'BufLeave', 'WinLeave' }, {
     group = augroup,
     buffer = buf,
-    callback = cancel,
+    callback = dismiss,
   })
 
   vim.api.nvim_create_autocmd('WinClosed', {
     group = augroup,
     pattern = tostring(win),
-    callback = cancel,
+    callback = dismiss,
   })
 
   vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
