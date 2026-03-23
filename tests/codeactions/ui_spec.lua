@@ -1,5 +1,30 @@
 describe('cosmic-ui.codeactions.ui', function()
   local lifecycle
+  local function collect_highlights(bufnr, ns)
+    local marks = vim.api.nvim_buf_get_extmarks(bufnr, ns, 0, -1, { details = true })
+    local collected = {}
+
+    for _, mark in ipairs(marks) do
+      table.insert(collected, {
+        lnum = mark[2],
+        col = mark[3],
+        end_col = mark[4].end_col,
+        hl_group = mark[4].hl_group,
+      })
+    end
+
+    return collected
+  end
+
+  local function has_highlight(highlights, expected)
+    for _, highlight in ipairs(highlights) do
+      if vim.deep_equal(highlight, expected) then
+        return true
+      end
+    end
+
+    return false
+  end
 
   before_each(function()
     lifecycle = require('cosmic-ui.codeactions.ui.lifecycle')
@@ -118,6 +143,228 @@ describe('cosmic-ui.codeactions.ui', function()
     assert.is_true(string.find(vim.wo[state.ui.win].winhl, 'FloatBorder:Identifier', 1, true) ~= nil)
     assert.is_true(string.find(vim.wo[state.ui.win].winhl, 'FloatTitle:Title', 1, true) ~= nil)
     assert.is_true(string.find(vim.wo[state.ui.win].winhl, 'FloatFooter:Question', 1, true) ~= nil)
+  end)
+
+  it('renders footer text and highlight spans with the shared panel footer output', function()
+    local panel = require('cosmic-ui.ui.panel')
+    local render = require('cosmic-ui.codeactions.ui.render')
+    local buf = vim.api.nvim_create_buf(false, true)
+    local win = vim.api.nvim_get_current_win()
+    local ui = {
+      buf = buf,
+      win = win,
+      ns = vim.api.nvim_create_namespace('cosmic-ui-codeactions-footer-spec'),
+      min_width = 30,
+      model = { actions = {} },
+      panel = panel.build({
+        footer = {
+          'Enter:apply',
+          'Esc:close',
+        },
+      }),
+    }
+
+    render.render(ui)
+
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    local extmarks = collect_highlights(buf, ui.ns)
+
+    assert.are.same({ ' Enter:apply  Esc:close ' }, lines)
+    assert.is_true(has_highlight(extmarks, {
+      lnum = 0,
+      col = 1,
+      end_col = 6,
+      hl_group = 'CosmicUiPanelHintKey',
+    }))
+    assert.is_true(has_highlight(extmarks, {
+      lnum = 0,
+      col = 7,
+      end_col = 12,
+      hl_group = 'CosmicUiPanelHintText',
+    }))
+    assert.is_true(has_highlight(extmarks, {
+      lnum = 0,
+      col = 14,
+      end_col = 17,
+      hl_group = 'CosmicUiPanelHintKey',
+    }))
+    assert.is_true(has_highlight(extmarks, {
+      lnum = 0,
+      col = 18,
+      end_col = 23,
+      hl_group = 'CosmicUiPanelHintText',
+    }))
+
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end)
+
+  it('keeps the standard code-actions render output unchanged after shared prep extraction', function()
+    local panel = require('cosmic-ui.ui.panel')
+    local render = require('cosmic-ui.codeactions.ui.render')
+    local buf = vim.api.nvim_create_buf(false, true)
+    local win = vim.api.nvim_open_win(buf, false, {
+      relative = 'editor',
+      row = 1,
+      col = 1,
+      width = 40,
+      height = 8,
+      style = 'minimal',
+      border = 'single',
+    })
+    local ui = {
+      buf = buf,
+      win = win,
+      ns = vim.api.nvim_create_namespace('cosmic-ui-codeactions-standard-render-spec'),
+      min_width = 30,
+      selected = 1,
+      border = {},
+      model = {
+        actions = {
+          { text = 'Fix A' },
+          { text = 'Fix B' },
+        },
+      },
+      panel = panel.build({
+        footer = {
+          'Enter:apply',
+          'Esc:close',
+        },
+        rows = {
+          { kind = 'section', text = 'alpha' },
+          { kind = 'action', text = 'Fix A' },
+          { kind = 'separator', text = 'beta' },
+          { kind = 'action', text = 'Fix B' },
+        },
+      }),
+    }
+
+    render.render(ui)
+
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    local extmarks = collect_highlights(buf, ui.ns)
+
+    assert.are.same({
+      '             alpha              ',
+      ' Fix A ',
+      '',
+      '              beta              ',
+      ' Fix B ',
+      '',
+      ' Enter:apply  Esc:close ',
+    }, lines)
+    assert.is_true(has_highlight(extmarks, {
+      lnum = 0,
+      col = 0,
+      end_col = 0,
+      hl_group = 'CosmicUiPanelSection',
+    }))
+    assert.is_true(has_highlight(extmarks, {
+      lnum = 3,
+      col = 0,
+      end_col = 0,
+      hl_group = 'CosmicUiPanelSection',
+    }))
+    assert.are.same({
+      [1] = 2,
+      [2] = 5,
+    }, ui.action_line_by_idx)
+
+    vim.api.nvim_win_close(win, true)
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end)
+
+  it('updates selection without rebuilding layout state', function()
+    local panel = require('cosmic-ui.ui.panel')
+    local render = require('cosmic-ui.codeactions.ui.render')
+    local buf = vim.api.nvim_create_buf(false, true)
+    local win = vim.api.nvim_open_win(buf, false, {
+      relative = 'editor',
+      row = 1,
+      col = 1,
+      width = 30,
+      height = 6,
+      style = 'minimal',
+      border = 'single',
+    })
+    local ui = {
+      buf = buf,
+      win = win,
+      ns = vim.api.nvim_create_namespace('cosmic-ui-codeactions-selection-spec'),
+      min_width = 30,
+      selected = 1,
+      border = {},
+      model = {
+        actions = {
+          { text = 'Fix A' },
+          { text = 'Fix B' },
+        },
+      },
+      panel = panel.build({
+        rows = {
+          { kind = 'section', text = 'lua_ls' },
+          { kind = 'action', text = 'Fix A' },
+          { kind = 'action', text = 'Fix B' },
+        },
+      }),
+    }
+
+    render.render(ui)
+
+    local lines_before = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    local cfg_before = vim.api.nvim_win_get_config(win)
+    local original_strdisplaywidth = vim.fn.strdisplaywidth
+    local original_set_lines = vim.api.nvim_buf_set_lines
+    local original_clear_namespace = vim.api.nvim_buf_clear_namespace
+    local original_add_highlight = vim.api.nvim_buf_add_highlight
+    local original_set_config = vim.api.nvim_win_set_config
+
+    vim.fn.strdisplaywidth = function()
+      error('selection update should not remeasure widths')
+    end
+    vim.api.nvim_buf_set_lines = function()
+      error('selection update should not rebuild line specs')
+    end
+    vim.api.nvim_buf_clear_namespace = function()
+      error('selection update should not clear existing highlights')
+    end
+    vim.api.nvim_buf_add_highlight = function()
+      error('selection update should not rebuild highlights')
+    end
+    vim.api.nvim_win_set_config = function(target, cfg)
+      assert.is_nil(cfg.width)
+      assert.is_nil(cfg.height)
+      assert.is_nil(cfg.row)
+      assert.is_nil(cfg.col)
+      return original_set_config(target, cfg)
+    end
+
+    local ok, err = pcall(function()
+      ui.selected = 2
+      render.update_selection(ui)
+    end)
+
+    vim.fn.strdisplaywidth = original_strdisplaywidth
+    vim.api.nvim_buf_set_lines = original_set_lines
+    vim.api.nvim_buf_clear_namespace = original_clear_namespace
+    vim.api.nvim_buf_add_highlight = original_add_highlight
+    vim.api.nvim_win_set_config = original_set_config
+
+    if not ok then
+      error(err)
+    end
+
+    local cfg_after = vim.api.nvim_win_get_config(win)
+
+    assert.are.same(lines_before, vim.api.nvim_buf_get_lines(buf, 0, -1, false))
+    assert.are.equal(cfg_before.width, cfg_after.width)
+    assert.are.equal(cfg_before.height, cfg_after.height)
+    assert.are.equal(cfg_before.row, cfg_after.row)
+    assert.are.equal(cfg_before.col, cfg_after.col)
+    assert.are.equal('(2/2)', cfg_after.footer[1][1])
+    assert.are.same({ ui.action_line_by_idx[2], 0 }, vim.api.nvim_win_get_cursor(win))
+
+    vim.api.nvim_win_close(win, true)
+    vim.api.nvim_buf_delete(buf, { force = true })
   end)
 
   it('does not advertise numeric direct picks for small action lists', function()
@@ -372,6 +619,47 @@ describe('cosmic-ui.codeactions.ui', function()
     end
 
     assert.are.same({}, numeric_lhs)
+  end)
+
+  it('routes selection navigation through the lightweight update path', function()
+    local input = require('cosmic-ui.codeactions.ui.input')
+    local original_buf = vim.api.nvim_get_current_buf()
+    local buf = vim.api.nvim_create_buf(false, true)
+    local ui = {
+      buf = buf,
+      selected = 1,
+      model = {
+        actions = {
+          { text = 'First action' },
+          { text = 'Second action' },
+        },
+      },
+    }
+    local calls = {}
+
+    vim.api.nvim_set_current_buf(buf)
+
+    input.set_keymaps(ui, {
+      submit_action = function() end,
+    }, {
+      close_fn = function() end,
+      render_fn = function()
+        table.insert(calls, 'render')
+      end,
+      update_selection_fn = function(target_ui)
+        table.insert(calls, 'update')
+        assert.are.equal(ui, target_ui)
+      end,
+    })
+
+    vim.api.nvim_feedkeys('j', 'xt', false)
+    vim.cmd('redraw')
+
+    vim.api.nvim_set_current_buf(original_buf)
+    vim.api.nvim_buf_delete(buf, { force = true })
+
+    assert.are.equal(2, ui.selected)
+    assert.are.same({ 'update' }, calls)
   end)
 end)
 

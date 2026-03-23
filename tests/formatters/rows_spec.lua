@@ -126,6 +126,7 @@ describe('cosmic-ui.formatters.ui.rows', function()
     local highlights = require('cosmic-ui.formatters.ui.highlights')
     local input = require('cosmic-ui.formatters.ui.input')
     local render = require('cosmic-ui.formatters.ui.render')
+    local ui_state = {}
 
     local buf = vim.api.nvim_create_buf(false, true)
     local ui = {
@@ -147,7 +148,7 @@ describe('cosmic-ui.formatters.ui.rows', function()
       close_fn = function()
         error('render should not close the panel')
       end,
-      ui_state = {},
+      ui_state = ui_state,
       constants = constants,
       highlights = highlights,
       rows = {
@@ -199,10 +200,11 @@ describe('cosmic-ui.formatters.ui.rows', function()
       },
     }
 
+    highlights.ensure(ui_state, constants.highlight_links)
     render.render(ui, handlers, deps)
 
     local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-    local extmarks = collect_highlights(buf, deps.ui_state.ns)
+    local extmarks = collect_highlights(buf, ui_state.ns)
     local has_footer_key_hl = false
     local has_footer_text_hl = false
     local has_subtitle_hl = false
@@ -240,5 +242,78 @@ describe('cosmic-ui.formatters.ui.rows', function()
     assert.is_true(has_footer_key_hl)
     assert.is_true(has_footer_text_hl)
     assert.is_true(has_subtitle_hl)
+  end)
+
+  it('reuses the existing formatter highlight namespace during rerenders', function()
+    local constants = require('cosmic-ui.formatters.constants')
+    local render = require('cosmic-ui.formatters.ui.render')
+
+    local buf = vim.api.nvim_create_buf(false, true)
+    local ensure_calls = 0
+    local seen_ns = {}
+    local ui = {
+      buf = buf,
+      win = vim.api.nvim_get_current_win(),
+      scope = 'buffer',
+      target_bufnr = 0,
+      selected = nil,
+      rows = {},
+      footer = {},
+    }
+    local handlers = {
+      status_fn = function()
+        return {}
+      end,
+    }
+    local deps = {
+      logger = {},
+      close_fn = function()
+        error('render should not close the panel')
+      end,
+      ui_state = { ns = 77 },
+      constants = constants,
+      highlights = {
+        ensure = function()
+          ensure_calls = ensure_calls + 1
+          return 88
+        end,
+        apply = function(_, ns)
+          table.insert(seen_ns, ns)
+        end,
+      },
+      rows = {
+        get_devicons = function()
+          return {}
+        end,
+        make_icons = function()
+          return {
+            file = 'F',
+            filetype = 'lua',
+          }
+        end,
+        build_rows = function()
+          return {}
+        end,
+      },
+      window = {
+        centered_float_config = function(width, height)
+          return {
+            row = 1,
+            col = 1,
+            width = width,
+            height = height,
+          }
+        end,
+        set_float_config = function() end,
+      },
+    }
+
+    render.render(ui, handlers, deps)
+    render.render(ui, handlers, deps)
+
+    vim.api.nvim_buf_delete(buf, { force = true })
+
+    assert.are.equal(0, ensure_calls)
+    assert.are.same({ 77, 77 }, seen_ns)
   end)
 end)

@@ -2,17 +2,10 @@ local lsp = vim.lsp
 local utils = require('cosmic-ui.utils')
 local config = require('cosmic-ui.config')
 local window = require('cosmic-ui.window')
-local panel = require('cosmic-ui.ui.panel')
 local model = require('cosmic-ui.rename.model')
 
 local M = {}
 local prompt_ns = vim.api.nvim_create_namespace('cosmic-ui-rename-prompt')
-local panel_ns = vim.api.nvim_create_namespace('cosmic-ui-rename-panel')
-
-local validation_copy = {
-  empty = 'Name cannot be empty',
-  unchanged = 'Name is unchanged',
-}
 
 local function assert_table(val)
   return val == nil or type(val) == 'table'
@@ -70,129 +63,19 @@ local function default_submitter(curr_name, target_ctx)
   end
 end
 
-local function footer_line(entries)
-  local text = ''
-  local spans = {}
-  local col = 0
-
-  for idx, entry in ipairs(entries or {}) do
-    if idx > 1 then
-      text = text .. '  '
-      col = col + 2
-    end
-
-    local key = entry.key or ''
-    local hint = entry.text or ''
-
-    text = text .. key
-    table.insert(spans, {
-      highlight = entry.key_highlight,
-      start_col = col,
-      end_col = col + #key,
-    })
-    col = col + #key
-
-    if hint ~= '' then
-      text = text .. ':' .. hint
-      table.insert(spans, {
-        highlight = entry.text_highlight,
-        start_col = col + 1,
-        end_col = col + 1 + #hint,
-      })
-      col = col + 1 + #hint
-    end
-  end
-
-  return text, spans
-end
-
-local function build_validation_row(reason)
-  local text = validation_copy[reason]
-  if not text then
-    return nil
-  end
-
-  return {
-    kind = 'state',
-    state = (reason == 'unchanged') and 'warn' or 'error',
-    text = text,
-  }
-end
-
-local function build_panel_model(curr_name, reason)
-  local rows = {
-    { kind = 'context', text = ('Current: %s'):format(curr_name) },
-  }
-
-  local validation_row = build_validation_row(reason)
-  if validation_row then
-    table.insert(rows, validation_row)
-  end
-
-  return panel.prepare({
-    layout = 'compact',
-    rows = rows,
-    footer = {
-      { key = 'Enter', text = 'rename' },
-      { key = 'Esc', text = 'cancel' },
-    },
-  })
-end
-
 local function render(ui, value)
   if not (ui.buf and vim.api.nvim_buf_is_valid(ui.buf)) then
     return
   end
 
   ui.value = value
-  ui.panel = build_panel_model(ui.curr_name, ui.validation_reason)
-
-  local lines = {}
-  local highlights = {}
-  local compact_layout = ui.panel and ui.panel.layout == 'compact'
-
-  local function push_line(text, meta)
-    table.insert(lines, text)
-    if meta then
-      highlights[#lines] = meta
-    end
-  end
-
   local prompt_line = ui.prompt .. value
-
-  if compact_layout then
-    push_line(prompt_line)
-  else
-    for _, row in ipairs(ui.panel.rows or {}) do
-      local highlight = row.highlight
-      if row.kind == 'context' then
-        highlight = 'CosmicUiPanelSection'
-      end
-
-      push_line(' ' .. (row.text or '') .. ' ', { highlight = highlight })
-    end
-
-    push_line('')
-    push_line(prompt_line)
-  end
-
-  local prompt_row = #lines
-
-  if not compact_layout and ui.panel.footer and #ui.panel.footer > 0 then
-    push_line('')
-    local footer_text, spans = footer_line(ui.panel.footer)
-    for _, span in ipairs(spans) do
-      span.start_col = span.start_col + 1
-      span.end_col = span.end_col + 1
-    end
-    push_line(' ' .. footer_text .. ' ', { spans = spans })
-  end
+  local lines = { prompt_line }
+  local prompt_row = 1
 
   local width = ui.fixed_width or 30
   if not ui.fixed_width then
-    for _, line in ipairs(lines) do
-      width = math.max(width, vim.fn.strdisplaywidth(line))
-    end
+    width = math.max(width, vim.fn.strdisplaywidth(prompt_line))
   end
 
   if ui.win and vim.api.nvim_win_is_valid(ui.win) then
@@ -207,20 +90,7 @@ local function render(ui, value)
   vim.api.nvim_buf_set_lines(ui.buf, 0, -1, false, lines)
   vim.bo[ui.buf].modifiable = was_modifiable
 
-  vim.api.nvim_buf_clear_namespace(ui.buf, panel_ns, 0, -1)
   vim.api.nvim_buf_clear_namespace(ui.buf, prompt_ns, 0, -1)
-
-  for line_no, meta in pairs(highlights) do
-    if meta.highlight then
-      vim.api.nvim_buf_add_highlight(ui.buf, panel_ns, meta.highlight, line_no - 1, 0, -1)
-    end
-
-    for _, span in ipairs(meta.spans or {}) do
-      if span.end_col >= span.start_col then
-        vim.api.nvim_buf_add_highlight(ui.buf, panel_ns, span.highlight, line_no - 1, span.start_col, span.end_col)
-      end
-    end
-  end
 
   if #ui.prompt > 0 then
     vim.api.nvim_buf_set_extmark(ui.buf, prompt_ns, prompt_row - 1, 0, {
@@ -385,9 +255,7 @@ M.open = function(opts)
     win = win,
     prompt = prompt,
     prompt_hl = user_opts.prompt_hl or 'Comment',
-    curr_name = curr_name,
     value = default_value,
-    validation_reason = nil,
     origin_win = target_winid,
     origin_cursor = target_cursor,
     fixed_width = opts.window and opts.window.width or nil,
@@ -444,9 +312,7 @@ M.open = function(opts)
     local result = model.normalize_submission(prompt, raw_line, curr_name)
 
     if not result.ok then
-      ui.validation_reason = result.reason
       ui.value = model.extract_value(prompt, raw_line)
-      ui.panel = build_panel_model(ui.curr_name, ui.validation_reason)
       return
     end
 

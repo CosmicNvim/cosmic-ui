@@ -16,42 +16,6 @@ local function row_display_text(row)
   return row.text
 end
 
-local function build_footer_line(entries)
-  local text = ''
-  local spans = {}
-  local col = 0
-
-  for idx, entry in ipairs(entries or {}) do
-    if idx > 1 then
-      text = text .. '  '
-      col = col + 2
-    end
-
-    local key = entry.key or ''
-    local hint = entry.text or ''
-
-    text = text .. key
-    table.insert(spans, {
-      highlight = entry.key_highlight,
-      start_col = col,
-      end_col = col + #key,
-    })
-    col = col + #key
-
-    if hint ~= '' then
-      text = text .. ':' .. hint
-      table.insert(spans, {
-        highlight = entry.text_highlight,
-        start_col = col + 1,
-        end_col = col + 1 + #hint,
-      })
-      col = col + 1 + #hint
-    end
-  end
-
-  return text, spans
-end
-
 M.ensure_selection = function(ui)
   if not ui.rows or #ui.rows == 0 then
     ui.selected = nil
@@ -98,7 +62,7 @@ M.render = function(ui, handlers, deps)
     return
   end
 
-  local ns = deps.highlights.ensure(deps.ui_state, deps.constants.highlight_links)
+  local ns = deps.ui_state.ns
 
   local status = handlers.status_fn({ scope = ui.scope, bufnr = ui.target_bufnr })
   if not status then
@@ -135,7 +99,7 @@ M.render = function(ui, handlers, deps)
   table.insert(content_lines, '')
   max_content_width = math.max(max_content_width, vim.fn.strdisplaywidth(''))
   if #footer > 0 then
-    local footer_text, footer_spans = build_footer_line(footer)
+    local footer_text, footer_spans = panel.render_footer(footer)
     table.insert(content_lines, footer_text)
     max_content_width = math.max(max_content_width, vim.fn.strdisplaywidth(footer_text))
     ui.footer_lnum = #content_lines

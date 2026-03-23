@@ -29,7 +29,10 @@ M.set_keymaps = function(ui, handlers, deps)
       return
     end
     ui.selected = idx
-    deps.render_fn(ui)
+    local update_selection = deps.update_selection_fn or deps.render_fn
+    if update_selection then
+      update_selection(ui)
+    end
   end
 
   local function submit()

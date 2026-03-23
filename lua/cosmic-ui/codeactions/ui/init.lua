@@ -168,6 +168,7 @@ M.open = function(results_lsp, user_opts)
     close_fn = close_current,
     dismiss_fn = dismiss_current,
     render_fn = render.render,
+    update_selection_fn = render.update_selection,
   }
 
   input.set_keymaps(ui, handlers, deps)

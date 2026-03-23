@@ -75,6 +75,32 @@ describe('cosmic-ui.rename.ui', function()
     end
   end
 
+  local function load_rename_ui_with_panel_stub(panel_stub)
+    local original_panel = package.loaded['cosmic-ui.ui.panel']
+    local original_ui = package.loaded['cosmic-ui.rename.ui']
+
+    package.loaded['cosmic-ui.ui.panel'] = panel_stub
+    package.loaded['cosmic-ui.rename.ui'] = nil
+
+    local ok, loaded_ui = pcall(require, 'cosmic-ui.rename.ui')
+
+    package.loaded['cosmic-ui.rename.ui'] = nil
+    if original_ui ~= nil then
+      package.loaded['cosmic-ui.rename.ui'] = original_ui
+    end
+
+    package.loaded['cosmic-ui.ui.panel'] = nil
+    if original_panel ~= nil then
+      package.loaded['cosmic-ui.ui.panel'] = original_panel
+    end
+
+    if not ok then
+      error(loaded_ui)
+    end
+
+    return loaded_ui
+  end
+
   local function stub_workspace_edit_rename(old_name)
     original_lsp_rename = vim.lsp.buf.rename
     local rename_calls = {}
@@ -292,6 +318,38 @@ describe('cosmic-ui.rename.ui', function()
     assert.are.same({ '> next_name' }, lines)
     assert.is_false(vim.tbl_contains(lines, ' Current: current_name '))
     assert.is_false(vim.tbl_contains(lines, ' Enter:rename  Esc:cancel '))
+  end)
+
+  it('keeps compact rename rendering independent from panel helpers', function()
+    stub_rename_context('current_name')
+
+    local actual_panel = require('cosmic-ui.ui.panel')
+    local prepare_calls = 0
+    local footer_calls = 0
+    local ui = load_rename_ui_with_panel_stub({
+      prepare = function(...)
+        prepare_calls = prepare_calls + 1
+        return actual_panel.prepare(...)
+      end,
+      render_footer = function(...)
+        footer_calls = footer_calls + 1
+        return actual_panel.render_footer(...)
+      end,
+    })
+
+    ui.open({
+      default_value = 'current_name',
+    })
+
+    press('<CR>')
+    vim.wait(1000, function()
+      local lines = vim.api.nvim_buf_get_lines(vim.api.nvim_get_current_buf(), 0, -1, false)
+      return #lines == 1 and lines[1] == '> current_name'
+    end)
+
+    assert.are.equal(0, prepare_calls)
+    assert.are.equal(0, footer_calls)
+    assert.are.same({ '> current_name' }, vim.api.nvim_buf_get_lines(vim.api.nvim_get_current_buf(), 0, -1, false))
   end)
 
   it('keeps the cursor on the prompt line after a rejected unchanged submit', function()

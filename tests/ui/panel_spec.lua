@@ -92,6 +92,112 @@ describe('cosmic-ui.ui.panel', function()
     end
   end)
 
+  it('renders normalized footer entries into stable text and highlight spans', function()
+    local panel = require('cosmic-ui.ui.panel')
+    local footer = panel.build({
+      footer = {
+        'Enter:apply',
+        {
+          key = 'Esc',
+          text = 'close',
+          key_highlight = 'Special',
+          text_highlight = 'NormalFloat',
+        },
+      },
+    }).footer
+
+    local text, spans = panel.render_footer(footer)
+
+    assert.are.equal('Enter:apply  Esc:close', text)
+    assert.are.same({
+      {
+        highlight = 'CosmicUiPanelHintKey',
+        start_col = 0,
+        end_col = 5,
+      },
+      {
+        highlight = 'CosmicUiPanelHintText',
+        start_col = 6,
+        end_col = 11,
+      },
+      {
+        highlight = 'Special',
+        start_col = 13,
+        end_col = 16,
+      },
+      {
+        highlight = 'NormalFloat',
+        start_col = 17,
+        end_col = 22,
+      },
+    }, spans)
+  end)
+
+  it('prepares standard panel render output for sections, actions, states, and footer rows', function()
+    local panel = require('cosmic-ui.ui.panel')
+    local model = panel.build({
+      footer = {
+        'Enter:apply',
+        'Esc:close',
+      },
+      rows = {
+        { kind = 'state', state = 'warn', text = '1 source failed to return code actions' },
+        { kind = 'section', text = 'alpha' },
+        { kind = 'action', text = 'Fix A' },
+        { kind = 'separator', text = 'beta' },
+        { kind = 'action', text = 'Fix B' },
+      },
+    })
+
+    local prepared = panel.prepare_standard(model, { min_width = 30 })
+
+    assert.are.equal(40, prepared.width)
+    assert.are.equal(8, prepared.height)
+    assert.are.same({
+      ' 1 source failed to return code actions ',
+      '                 alpha                  ',
+      ' Fix A ',
+      '',
+      '                  beta                  ',
+      ' Fix B ',
+      '',
+      ' Enter:apply  Esc:close ',
+    }, prepared.lines)
+    assert.are.same({
+      [1] = { highlight = 'CosmicUiPanelStateWarn' },
+      [2] = { highlight = 'CosmicUiPanelSection' },
+      [5] = { highlight = 'CosmicUiPanelSection' },
+      [8] = {
+        spans = {
+          {
+            highlight = 'CosmicUiPanelHintKey',
+            start_col = 1,
+            end_col = 6,
+          },
+          {
+            highlight = 'CosmicUiPanelHintText',
+            start_col = 7,
+            end_col = 12,
+          },
+          {
+            highlight = 'CosmicUiPanelHintKey',
+            start_col = 14,
+            end_col = 17,
+          },
+          {
+            highlight = 'CosmicUiPanelHintText',
+            start_col = 18,
+            end_col = 23,
+          },
+        },
+      },
+    }, prepared.highlights)
+    assert.are.same({
+      [1] = 3,
+      [2] = 6,
+    }, prepared.action_line_by_idx)
+  end)
+
   it('restores focus through the panel-facing helper', function()
     local panel = require('cosmic-ui.ui.panel')
     local first = vim.api.nvim_get_current_win()

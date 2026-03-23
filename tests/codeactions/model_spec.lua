@@ -1,5 +1,5 @@
 describe('cosmic-ui.codeactions.ui.model', function()
-  it('builds grouped rows with a stable title and action count', function()
+  it('builds grouped headerless rows for available actions', function()
     local model = require('cosmic-ui.codeactions.ui.model')
     local built = model.build({
       [2] = {
@@ -17,8 +17,8 @@ describe('cosmic-ui.codeactions.ui.model', function()
       },
     })
 
-    assert.are.equal('Code Actions', built.title)
-    assert.are.equal('3 actions', built.subtitle)
+    assert.is_nil(built.title)
+    assert.is_nil(built.subtitle)
     assert.are.equal(3, #built.actions)
     assert.are.same(
       {
@@ -46,7 +46,8 @@ describe('cosmic-ui.codeactions.ui.model', function()
     })
 
     assert.are.equal(0, #built.actions)
-    assert.are.equal('0 actions', built.subtitle)
+    assert.is_nil(built.title)
+    assert.is_nil(built.subtitle)
     assert.are.same({
       kind = 'state',
       state = 'empty',

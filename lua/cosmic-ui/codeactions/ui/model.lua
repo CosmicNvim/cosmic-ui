@@ -52,8 +52,6 @@ M.build = function(results_lsp)
       },
       actions = actions,
       min_width = math.max(min_width, vim.fn.strdisplaywidth(loading_text)),
-      title = 'Code Actions',
-      subtitle = 'Loading...',
       has_partial_error = false,
       error_count = 0,
     }
@@ -132,8 +130,6 @@ M.build = function(results_lsp)
     rows = rows,
     actions = actions,
     min_width = min_width,
-    title = 'Code Actions',
-    subtitle = ('%s actions'):format(#actions),
     has_partial_error = has_partial_error,
     error_count = error_count,
   }
