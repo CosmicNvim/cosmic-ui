@@ -1,5 +1,5 @@
-if vim.fn.has("nvim-0.11") ~= 1 then
-  error("Sorry this plugin only supports Neovim version >= v0.11")
+if vim.fn.has('nvim-0.11') ~= 1 then
+  error('Sorry this plugin only supports Neovim version >= v0.11')
   return
 end
 
@@ -9,3 +9,19 @@ end
 
 vim.g.loaded_cosmic_ui = 1
 _G.CosmicUI = require('cosmic-ui')
+
+vim.api.nvim_create_user_command('CosmicRename', function()
+  require('cosmic-ui').rename.open()
+end, { desc = 'Open the Cosmic rename prompt' })
+
+vim.api.nvim_create_user_command('CosmicCodeActions', function()
+  require('cosmic-ui').codeactions.open()
+end, { desc = 'Open the Cosmic code action panel' })
+
+vim.api.nvim_create_user_command('CosmicFormatters', function()
+  require('cosmic-ui').formatters.open()
+end, { desc = 'Open the Cosmic formatter panel' })
+
+vim.api.nvim_create_user_command('CosmicFormat', function()
+  require('cosmic-ui').formatters.format()
+end, { desc = 'Format the current buffer with Cosmic formatter routing' })

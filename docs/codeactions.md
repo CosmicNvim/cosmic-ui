@@ -2,6 +2,7 @@
 
 Code actions module for `cosmic-ui`.
 This module validates setup/module enable state and runs code action requests directly.
+Lua API is primary; `:CosmicCodeActions` is an optional wrapper.
 
 ## Setup
 
@@ -56,7 +57,7 @@ Behavior:
 - opens a native floating menu (no NUI dependency)
 - menu groups are ordered deterministically by client name (tie-break: client id)
 - actions within each client group keep server response order
-- group headers are centered and rendered as bordered divider lines
+- group headers are rendered as plain section rows
 - selection index/count is shown in the float border footer (right-aligned)
 - keymaps: `j`/`k`, `<Down>`/`<Up>`, `<Tab>`/`<S-Tab>`, `<CR>`/`<Space>`, `<Esc>`/`<C-c>`
 
@@ -91,3 +92,7 @@ require("cosmic-ui").codeactions.range({
   range = { start = { 10, 0 }, ["end"] = { 12, 0 } },
 })
 ```
+
+Optional command:
+
+- `:CosmicCodeActions` opens the Cosmic code action panel.

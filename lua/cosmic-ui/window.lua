@@ -49,6 +49,12 @@ M.set_float_config = function(win, config)
   vim.api.nvim_win_set_config(win, config)
 end
 
+M.restore_focus = function(win)
+  if win and vim.api.nvim_win_is_valid(win) then
+    vim.api.nvim_set_current_win(win)
+  end
+end
+
 M.safe_close_win = function(win)
   if win and vim.api.nvim_win_is_valid(win) then
     pcall(vim.api.nvim_win_close, win, true)

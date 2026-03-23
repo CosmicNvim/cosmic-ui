@@ -1,41 +1,58 @@
+local panel = require('cosmic-ui.ui.panel')
+
 local M = {}
 
-local function pad_right(text, width)
-  local text_width = vim.fn.strdisplaywidth(text)
-  if text_width >= width then
-    return text
-  end
-  return text .. string.rep(' ', width - text_width)
+local function clamp_ui_size(width, height)
+  local max_width = math.max(36, math.floor(vim.o.columns * 0.9))
+  local max_height = math.max(8, math.floor((vim.o.lines - vim.o.cmdheight) * 0.7))
+  return math.min(width, max_width), math.min(height, max_height)
 end
 
-local function bordered_header(text, width)
-  local label = text
-  local label_width = vim.fn.strdisplaywidth(label)
-  if label_width >= width then
-    return label, 0, #label
-  end
-
-  -- Draw a simple section divider line: "──── (client) ────"
-  local pad = width - label_width
-  local left = math.floor(pad / 2)
-  local right = pad - left
-
-  local left_fill = (left > 0) and (string.rep('─', math.max(left - 1, 0)) .. ' ') or ''
-  local right_fill = (right > 0) and (' ' .. string.rep('─', math.max(right - 1, 0))) or ''
-  local rendered = left_fill .. label .. right_fill
-  local label_start = #left_fill
-  local label_end = label_start + #label
-  return rendered, label_start, label_end
-end
-
-local function next_selected(ui)
-  if ui.selected and ui.selected >= 1 and ui.selected <= #ui.model.actions then
-    return ui.selected
-  end
+local function selection_indicator(ui)
   if #ui.model.actions == 0 then
     return nil
   end
-  return 1
+
+  return ('(%d/%d)'):format(ui.selected or 0, #ui.model.actions)
+end
+
+local function apply_selection(ui)
+  local indicator = selection_indicator(ui)
+
+  if ui.win and vim.api.nvim_win_is_valid(ui.win) then
+    vim.api.nvim_win_set_config(ui.win, {
+      footer = indicator,
+      footer_pos = indicator and 'right' or nil,
+    })
+  end
+
+  if ui.selected and ui.action_line_by_idx and ui.action_line_by_idx[ui.selected] and ui.win and vim.api.nvim_win_is_valid(
+      ui.win
+    ) then
+    pcall(vim.api.nvim_win_set_cursor, ui.win, { ui.action_line_by_idx[ui.selected], 0 })
+  end
+end
+
+M.ensure_selection = function(ui)
+  if #ui.model.actions == 0 then
+    ui.selected = nil
+    return
+  end
+
+  if ui.selected and ui.selected >= 1 and ui.selected <= #ui.model.actions then
+    return
+  end
+
+  ui.selected = 1
+end
+
+M.update_selection = function(ui)
+  if not (ui.buf and vim.api.nvim_buf_is_valid(ui.buf)) then
+    return
+  end
+
+  M.ensure_selection(ui)
+  apply_selection(ui)
 end
 
 M.render = function(ui)
@@ -43,50 +60,24 @@ M.render = function(ui)
     return
   end
 
-  ui.selected = next_selected(ui)
+  M.ensure_selection(ui)
 
-  local indicator = ('(%d/%d)'):format(ui.selected or 0, #ui.model.actions)
-  local content_width = math.max(ui.content_width or 30, vim.fn.strdisplaywidth(indicator), 30)
+  local prepared = panel.prepare_standard(ui.panel, {
+    min_width = ui.min_width or 30,
+    clamp_size = clamp_ui_size,
+  })
+  local width = prepared.width
+  local height = prepared.height
+  local lines = prepared.lines
+  local highlights = prepared.highlights
 
-  local lines = {}
-  local line_meta = {}
-  local action_line_by_idx = {}
-  local action_idx = 0
-
-  for _, row in ipairs(ui.model.rows) do
-    local line_text = row.text
-    local label_start_col = nil
-    local label_end_col = nil
-    if row.kind == 'separator' then
-      line_text, label_start_col, label_end_col = bordered_header(line_text, content_width)
-    else
-      line_text = pad_right(line_text, content_width)
-    end
-    local padded = ' ' .. line_text .. ' '
-    table.insert(lines, padded)
-
-    local line_no = #lines
-    if row.kind == 'action' then
-      action_idx = action_idx + 1
-      action_line_by_idx[action_idx] = line_no
-      line_meta[line_no] = { kind = 'action', action_idx = action_idx }
-    else
-      local label_start = (label_start_col or 0) + 1 -- account for left padding space
-      local label_end = (label_end_col or 0) + 1
-      local name_start = label_start
-      local name_end = label_end
-
-      if vim.startswith(row.text, '(') and row.text:sub(-1) == ')' then
-        name_start = label_start + 1
-        name_end = label_end - 1
-      end
-
-      line_meta[line_no] = {
-        kind = 'separator',
-        name_start_col = name_start,
-        name_end_col = name_end,
-      }
-    end
+  if ui.win and vim.api.nvim_win_is_valid(ui.win) then
+    local cfg = vim.api.nvim_win_get_config(ui.win)
+    cfg.width = width
+    cfg.height = height
+    cfg.title = ui.border and ui.border.title or nil
+    cfg.title_pos = ui.border and ui.border.title_align or nil
+    vim.api.nvim_win_set_config(ui.win, cfg)
   end
 
   vim.bo[ui.buf].modifiable = true
@@ -95,33 +86,21 @@ M.render = function(ui)
 
   local ns = ui.ns
   vim.api.nvim_buf_clear_namespace(ui.buf, ns, 0, -1)
-  local separator_hl = ui.border and ui.border.highlight or 'FloatBorder'
-  if separator_hl == '' or separator_hl == nil then
-    separator_hl = 'FloatBorder'
-  end
 
-  for line_no, meta in pairs(line_meta) do
-    if meta.kind == 'separator' then
-      vim.api.nvim_buf_add_highlight(ui.buf, ns, separator_hl, line_no - 1, 0, -1)
-      if meta.name_end_col > meta.name_start_col then
-        vim.api.nvim_buf_add_highlight(ui.buf, ns, 'Comment', line_no - 1, meta.name_start_col, meta.name_end_col)
+  for line_no, meta in pairs(highlights) do
+    if meta.highlight then
+      vim.api.nvim_buf_add_highlight(ui.buf, ns, meta.highlight, line_no - 1, 0, -1)
+    end
+
+    for _, span in ipairs(meta.spans or {}) do
+      if span.end_col >= span.start_col then
+        vim.api.nvim_buf_add_highlight(ui.buf, ns, span.highlight, line_no - 1, span.start_col, span.end_col)
       end
     end
   end
 
-  ui.action_line_by_idx = action_line_by_idx
-  ui.line_meta = line_meta
-
-  if ui.win and vim.api.nvim_win_is_valid(ui.win) then
-    local cfg = vim.api.nvim_win_get_config(ui.win)
-    cfg.footer = indicator
-    cfg.footer_pos = 'right'
-    vim.api.nvim_win_set_config(ui.win, cfg)
-  end
-
-  if ui.selected and ui.action_line_by_idx[ui.selected] and ui.win and vim.api.nvim_win_is_valid(ui.win) then
-    pcall(vim.api.nvim_win_set_cursor, ui.win, { ui.action_line_by_idx[ui.selected], 0 })
-  end
+  ui.action_line_by_idx = prepared.action_line_by_idx
+  M.update_selection(ui)
 end
 
 return M

@@ -23,9 +23,7 @@ M.resolve_bufnr = function(bufnr)
   end
 
   if type(resolved) ~= 'number' then
-    logger:warn(
-      ('Invalid formatter bufnr type `%s`; expected an integer buffer handle.'):format(type(resolved))
-    )
+    logger:warn(('Invalid formatter bufnr type `%s`; expected an integer buffer handle.'):format(type(resolved)))
     return nil
   end
 

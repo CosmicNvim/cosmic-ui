@@ -107,9 +107,7 @@ end
 
 M.warn_not_setup = function(method_name)
   warn_once(
-    ('cosmic-ui is not set up. Call require("cosmic-ui").setup({...}) before using CosmicUI.%s'):format(
-      method_name
-    )
+    ('cosmic-ui is not set up. Call require("cosmic-ui").setup({...}) before using CosmicUI.%s'):format(method_name)
   )
 end
 

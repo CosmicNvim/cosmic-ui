@@ -1,5 +1,16 @@
 local M = {}
 
+M.footer_entries = function()
+  return {
+    'Tab:toggle+next',
+    's:scope',
+    'r:reset',
+    'a:toggle all',
+    'f:format',
+    'q:close',
+  }
+end
+
 local function next_toggleable_index(rows, start_idx, step)
   if #rows == 0 then
     return nil
@@ -80,7 +91,8 @@ local function toggle_all_rows(ui, handlers, deps)
 
   local all_enabled = true
   for _, row in ipairs(toggleable) do
-    local is_enabled = deps.state.get_effective_item_state(row.action.source, row.action.name, ui.scope, ui.target_bufnr)
+    local is_enabled =
+      deps.state.get_effective_item_state(row.action.source, row.action.name, ui.scope, ui.target_bufnr)
     if not is_enabled then
       all_enabled = false
       break

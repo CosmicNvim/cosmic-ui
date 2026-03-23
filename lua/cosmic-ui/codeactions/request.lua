@@ -39,19 +39,41 @@ local function make_client_params(client, bufnr, opts, lnum)
 end
 
 M.collect = function(opts)
-  local bufnr = opts.bufnr or 0
+  local bufnr = opts.bufnr
+  if bufnr == nil or bufnr == 0 then
+    bufnr = vim.api.nvim_get_current_buf()
+  end
   local clients = opts.clients or {}
   local user_opts = opts.user_opts or {}
   local on_complete = opts.on_complete
   local lnum = vim.api.nvim_win_get_cursor(0)[1] - 1
   local pending = #clients
   local results_lsp = {}
+  local prepared_requests = {}
+  local request_state = {
+    status = 'loading',
+    responses = results_lsp,
+    total_clients = pending,
+    completed_clients = 0,
+  }
 
   if pending == 0 then
     if on_complete then
-      on_complete(results_lsp, user_opts)
+      request_state.status = 'ready'
+      on_complete(request_state, user_opts)
     end
     return
+  end
+
+  for _, client in ipairs(clients) do
+    table.insert(prepared_requests, {
+      client = client,
+      params = make_client_params(client, bufnr, user_opts, lnum),
+    })
+  end
+
+  if on_complete then
+    on_complete(request_state, user_opts)
   end
 
   local function on_result(client)
@@ -62,20 +84,21 @@ M.collect = function(opts)
         client = client,
       }
 
+      request_state.completed_clients = request_state.completed_clients + 1
       pending = pending - 1
       if pending > 0 then
         return
       end
 
       if on_complete then
-        on_complete(results_lsp, user_opts)
+        request_state.status = 'ready'
+        on_complete(request_state, user_opts)
       end
     end
   end
 
-  for _, client in ipairs(clients) do
-    local params = make_client_params(client, bufnr, user_opts, lnum)
-    client:request('textDocument/codeAction', params, on_result(client), bufnr)
+  for _, prepared in ipairs(prepared_requests) do
+    prepared.client:request('textDocument/codeAction', prepared.params, on_result(prepared.client), bufnr)
   end
 end
 

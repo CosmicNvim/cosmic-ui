@@ -1,3 +1,5 @@
+local ui_constants = require('cosmic-ui.ui.constants')
+
 local M = {}
 
 M.default_backend_state = {
@@ -11,19 +13,15 @@ M.status_icons = {
   unavailable = '',
 }
 
-M.ui_padding = {
-  x = 1,
-  y = 0,
-}
+M.ui_padding = ui_constants.padding
 
 M.highlight_links = {
-  CosmicUiFmtTitle = 'Title',
+  CosmicUiFmtTitle = 'CosmicUiPanelTitle',
   CosmicUiFmtHeader = 'Identifier',
-  CosmicUiFmtSection = 'Type',
+  CosmicUiFmtSection = 'CosmicUiPanelSection',
+  CosmicUiFmtSubtitle = 'CosmicUiPanelSubtitle',
   CosmicUiFmtCursorLine = 'CursorLine',
   CosmicUiFmtCursor = 'Cursor',
-  CosmicUiFmtHintKey = 'Special',
-  CosmicUiFmtHintText = 'Comment',
   CosmicUiFmtEnabled = 'String',
   CosmicUiFmtDisabled = 'Comment',
   CosmicUiFmtUnavailable = 'WarningMsg',

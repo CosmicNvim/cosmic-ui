@@ -48,7 +48,7 @@ M.supports_code_action_resolve = function(client)
   local code_action_provider = server_capabilities.codeActionProvider or server_capabilities.codeAction
 
   return type(code_action_provider) == 'table'
-      and (code_action_provider.resolveProvider or code_action_provider.resolve_provider)
+    and (code_action_provider.resolveProvider or code_action_provider.resolve_provider)
 end
 
 return M

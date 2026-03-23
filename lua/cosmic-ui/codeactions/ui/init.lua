@@ -1,4 +1,5 @@
 local utils = require('cosmic-ui.utils')
+local panel = require('cosmic-ui.ui.panel')
 local window = require('cosmic-ui.window')
 local transform = require('cosmic-ui.codeactions.transform')
 local lifecycle = require('cosmic-ui.codeactions.ui.lifecycle')
@@ -9,17 +10,19 @@ local logger = utils.Logger
 
 local M = {}
 
-local function compute_content_width(rows, min_width)
-  local width = math.max(min_width or 30, 30)
-  for _, row in ipairs(rows) do
-    width = math.max(width, vim.fn.strdisplaywidth(row.text))
-  end
-  return width
+local function close_current()
+  lifecycle.close_current({ dismissed = false })
 end
 
-local function compute_height(row_count)
-  local max_height = math.max(8, math.floor((vim.o.lines - vim.o.cmdheight) * 0.7))
-  return math.max(1, math.min(row_count, max_height))
+local function dismiss_current()
+  lifecycle.close_current({ dismissed = true })
+end
+
+local function build_panel_model(built)
+  return panel.prepare({
+    rows = built.rows,
+    selected = (#built.actions > 0) and 1 or nil,
+  })
 end
 
 local function submit_action(action)
@@ -53,16 +56,36 @@ local function submit_action(action)
 end
 
 M.open = function(results_lsp, user_opts)
-  if not results_lsp or next(results_lsp) == nil then
+  if not results_lsp then
     logger:warn('No results from textDocument/codeAction')
     return
   end
 
-  lifecycle.close_current()
+  local request_state = nil
+  if type(results_lsp) == 'table' and results_lsp.responses then
+    request_state = results_lsp
+    if lifecycle.is_request_dismissed(request_state) then
+      return
+    end
+  end
 
+  user_opts = user_opts or {}
   local built = model.build(results_lsp)
-  if #built.actions == 0 then
-    logger:log('No code actions available')
+  local origin_win = vim.api.nvim_get_current_win()
+  local existing = lifecycle.get_state().ui
+
+  if existing and vim.api.nvim_buf_is_valid(existing.buf) and vim.api.nvim_win_is_valid(existing.win) then
+    existing.model = built
+    existing.panel = build_panel_model(built)
+    existing.min_width = math.max(existing.min_width or 30, user_opts.min_width or 30, built.min_width or 30)
+    existing.user_opts = user_opts
+    existing.request_state = request_state
+    existing.border = user_opts.border or existing.border
+    existing.origin_win = origin_win
+    if existing.selected and existing.selected > #built.actions then
+      existing.selected = nil
+    end
+    render.render(existing)
     return
   end
 
@@ -71,9 +94,6 @@ M.open = function(results_lsp, user_opts)
   if border_style == '' then
     border_style = nil
   end
-  local content_width = compute_content_width(built.rows, user_opts.min_width or built.min_width)
-  local width = content_width + 2
-  local height = compute_height(#built.rows)
 
   local buf = window.create_scratch_buf({
     filetype = 'cosmicui-codeactions',
@@ -88,13 +108,11 @@ M.open = function(results_lsp, user_opts)
     relative = 'cursor',
     row = 1,
     col = 0,
-    width = width,
-    height = height,
+    width = math.max((user_opts.min_width or built.min_width or 30) + 2, 32),
+    height = 1,
     border = border_style,
     title = border.title,
     title_pos = border.title_align,
-    footer = '(1/' .. tostring(#built.actions) .. ')',
-    footer_pos = 'right',
   })
   if not win then
     window.safe_delete_buf(buf, { force = true })
@@ -118,6 +136,7 @@ M.open = function(results_lsp, user_opts)
   if border.bottom_hl then
     table.insert(winhl, 'FloatFooter:' .. border.bottom_hl)
   end
+  table.insert(winhl, 'CursorLine:Visual')
   if #winhl > 0 then
     vim.wo[win].winhl = table.concat(winhl, ',')
   end
@@ -128,14 +147,17 @@ M.open = function(results_lsp, user_opts)
     row = 1,
     col = 0,
     model = built,
-    selected = 1,
+    panel = build_panel_model(built),
+    selected = (#built.actions > 0) and 1 or nil,
+    min_width = math.max(user_opts.min_width or 30, built.min_width or 30),
     user_opts = user_opts,
+    request_state = request_state,
     border = border,
-    ns = vim.api.nvim_create_namespace('cosmic-ui-codeactions'),
-    content_width = content_width,
+    origin_win = origin_win,
+    ns = lifecycle.ensure_namespace('cosmic-ui-codeactions'),
   }
 
-  lifecycle.attach_close_autocmds(ui, lifecycle.close_current)
+  lifecycle.attach_close_autocmds(ui, close_current)
   lifecycle.set_ui(ui)
 
   local handlers = {
@@ -143,8 +165,10 @@ M.open = function(results_lsp, user_opts)
   }
 
   local deps = {
-    close_fn = lifecycle.close_current,
+    close_fn = close_current,
+    dismiss_fn = dismiss_current,
     render_fn = render.render,
+    update_selection_fn = render.update_selection,
   }
 
   input.set_keymaps(ui, handlers, deps)
@@ -157,6 +181,6 @@ M.open = function(results_lsp, user_opts)
   end)
 end
 
-M.close = lifecycle.close_current
+M.close = dismiss_current
 
 return M
