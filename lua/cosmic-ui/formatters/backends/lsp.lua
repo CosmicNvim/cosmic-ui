@@ -62,18 +62,22 @@ M.get_lsp_items = function(bufnr, scope)
   return items, enabled_ids
 end
 
-M.lsp_backend_state = function(scope, bufnr)
+M.lsp_backend_state_from_items = function(scope, bufnr, enabled_ids)
   local backend_enabled = state.get_effective_backend_state('lsp', scope, bufnr)
   if not backend_enabled then
     return 'OFF', backend_enabled
   end
 
-  local _, enabled_ids = M.get_lsp_items(bufnr, scope)
-  if next(enabled_ids) == nil then
+  if next(enabled_ids or {}) == nil then
     return 'UNAVAILABLE', backend_enabled
   end
 
   return 'ON', backend_enabled
+end
+
+M.lsp_backend_state = function(scope, bufnr)
+  local _, enabled_ids = M.get_lsp_items(bufnr, scope)
+  return M.lsp_backend_state_from_items(scope, bufnr, enabled_ids)
 end
 
 M.run_lsp = function(opts)

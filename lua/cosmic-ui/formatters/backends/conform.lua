@@ -247,14 +247,13 @@ M.get_conform_items = function(bufnr, scope)
   }
 end
 
-M.conform_backend_state = function(scope, bufnr)
+M.conform_backend_state_from_items = function(scope, bufnr, conform_data)
   local backend_enabled = state.get_effective_backend_state('conform', scope, bufnr)
   if not backend_enabled then
     return 'OFF', backend_enabled
   end
 
-  local conform_data = M.get_conform_items(bufnr, scope)
-  if not conform_data.available then
+  if not conform_data or not conform_data.available then
     return 'UNAVAILABLE', backend_enabled
   end
 
@@ -265,6 +264,11 @@ M.conform_backend_state = function(scope, bufnr)
   end
 
   return 'UNAVAILABLE', backend_enabled
+end
+
+M.conform_backend_state = function(scope, bufnr)
+  local conform_data = M.get_conform_items(bufnr, scope)
+  return M.conform_backend_state_from_items(scope, bufnr, conform_data)
 end
 
 M.run_conform = function(opts)

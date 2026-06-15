@@ -386,4 +386,32 @@ describe('cosmic-ui.formatters api', function()
     assert.are.same({ 'stylua' }, conform_calls[1].formatters)
     assert.is_true(vim.tbl_contains(error_messages(), 'Conform format failed: format failed'))
   end)
+
+  it('discovers Conform formatters once when building a status snapshot', function()
+    local conform_discovery_calls = 0
+    local formatters = setup_formatters()
+    local bufnr = new_buffer('lua')
+
+    stub_conform(nil, nil, {
+      list_formatters_to_run = function(target_bufnr)
+        assert.are.equal(bufnr, target_bufnr)
+        conform_discovery_calls = conform_discovery_calls + 1
+        return { 'stylua' }
+      end,
+      default_format_opts = {
+        lsp_format = 'fallback',
+      },
+      formatters_by_ft = {
+        lua = { 'stylua' },
+      },
+    })
+
+    local snapshot = formatters.status({ bufnr = bufnr })
+
+    assert.are.equal(1, conform_discovery_calls)
+    assert.is_not_nil(snapshot.backends.conform.state)
+    assert.are.equal(1, #snapshot.conform.formatters)
+    assert.are.equal('stylua', snapshot.conform.formatters[1].name)
+    assert.is_not_nil(snapshot.conform.fallback)
+  end)
 end)

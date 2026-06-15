@@ -17,10 +17,10 @@ M.get = function(opts)
     return
   end
 
-  local lsp_state, lsp_enabled = lsp_backend.lsp_backend_state(scope, bufnr)
-  local conform_state, conform_enabled = conform_backend.conform_backend_state(scope, bufnr)
-  local lsp_clients = lsp_backend.get_lsp_items(bufnr, scope)
   local conform_data = conform_backend.get_conform_items(bufnr, scope)
+  local lsp_clients, enabled_ids = lsp_backend.get_lsp_items(bufnr, scope)
+  local lsp_state, lsp_enabled = lsp_backend.lsp_backend_state_from_items(scope, bufnr, enabled_ids)
+  local conform_state, conform_enabled = conform_backend.conform_backend_state_from_items(scope, bufnr, conform_data)
   local mode_sources = conform_backend.resolve_conform_mode_sources(bufnr, nil)
   local fallback_mode, fallback_source, configured_mode, configured_source =
     conform_backend.resolve_effective_conform_lsp_mode(mode_sources, lsp_enabled)
