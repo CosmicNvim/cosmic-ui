@@ -30,18 +30,39 @@ Cosmic-UI is a simple wrapper around specific vim functionality. Built in order 
 
 ## 🛠 Installation
 
-```lua
-  vim.pack.add({
-    'https://github.com/nvim-lua/plenary.nvim',
-    'https://github.com/nvim-tree/nvim-web-devicons',
-    'https://github.com/CosmicNvim/cosmic-ui',
-  })
+Stable lazy.nvim example:
 
-  require('cosmic-ui').setup({
-    rename = {},
-    codeactions = {},
-    formatters = {},
-  })
+```lua
+{
+  "CosmicNvim/cosmic-ui",
+  dependencies = {
+    "nvim-lua/plenary.nvim",
+    "nvim-tree/nvim-web-devicons",
+  },
+  config = function()
+    require("cosmic-ui").setup({
+      rename = {},
+      codeactions = {},
+      formatters = {},
+    })
+  end,
+}
+```
+
+Native vim.pack example:
+
+```lua
+vim.pack.add({
+  "https://github.com/nvim-lua/plenary.nvim",
+  "https://github.com/nvim-tree/nvim-web-devicons",
+  "https://github.com/CosmicNvim/cosmic-ui",
+})
+
+require("cosmic-ui").setup({
+  rename = {},
+  codeactions = {},
+  formatters = {},
+})
 ```
 
 `vim.pack` is still experimental in Neovim's official docs and may not be available in every local build yet.
