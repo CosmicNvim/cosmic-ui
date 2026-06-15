@@ -414,4 +414,44 @@ describe('cosmic-ui.formatters api', function()
     assert.are.equal('stylua', snapshot.conform.formatters[1].name)
     assert.is_not_nil(snapshot.conform.fallback)
   end)
+
+  it('reflects requested Conform LSP mode in status fallback metadata', function()
+    local formatters = setup_formatters()
+    local bufnr = new_buffer('lua')
+
+    stub_conform({ 'stylua' })
+
+    local snapshot = formatters.status({
+      bufnr = bufnr,
+      conform = {
+        lsp_format = 'fallback',
+      },
+    })
+
+    assert.are.equal('fallback', snapshot.conform.fallback.requested_mode)
+    assert.are.equal('fallback', snapshot.conform.fallback.mode)
+    assert.are.equal('requested', snapshot.conform.fallback.configured_source)
+  end)
+
+  it('ignores invalid requested Conform LSP mode in status fallback metadata', function()
+    local formatters = setup_formatters()
+    local bufnr = new_buffer('lua')
+
+    stub_conform({ 'stylua' }, nil, {
+      default_format_opts = {
+        lsp_format = 'prefer',
+      },
+    })
+
+    local snapshot = formatters.status({
+      bufnr = bufnr,
+      conform = {
+        lsp_format = 'bad-mode',
+      },
+    })
+
+    assert.is_nil(snapshot.conform.fallback.requested_mode)
+    assert.are.equal('prefer', snapshot.conform.fallback.mode)
+    assert.are.equal('global', snapshot.conform.fallback.configured_source)
+  end)
 end)

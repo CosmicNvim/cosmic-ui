@@ -133,7 +133,8 @@ Returns:
 ### `require("cosmic-ui").formatters.status(opts?)`
 
 Returns formatter status snapshot.
-Opts: `OpenOpts`.
+Opts: `OpenOpts` plus optional `conform.lsp_format` to preview requested
+Conform LSP mode resolution without mutating formatter state.
 Returns: status table with `backends`, `lsp_clients`, and `conform`.
 Includes fallback visibility:
 - `conform.fallback`:

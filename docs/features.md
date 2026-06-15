@@ -216,6 +216,7 @@ Returns a formatter status snapshot for UI and inspection.
 | --- | --- | --- | --- | --- |
 | `scope` | `"buffer"\|"global"\|nil` | No | `"buffer"` | Scope to inspect. |
 | `bufnr` | `integer\|nil` | No | current buffer (`0`) | Buffer whose status is inspected. |
+| `conform.lsp_format` | `"never"\|"fallback"\|"prefer"\|"first"\|"last"\|nil` | No | `nil` | Preview requested Conform LSP mode resolution without mutating formatter state. |
 
 Returns:
 - Table containing `backends`, `lsp_clients`, and `conform` formatter availability/details.
