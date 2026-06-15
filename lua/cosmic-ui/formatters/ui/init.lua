@@ -95,9 +95,14 @@ M.open = function(opts, handlers)
     render.render(target_ui, target_handlers, deps)
   end
 
+  local function update_selection_fn(target_ui)
+    render.update_selection(target_ui, deps)
+  end
+
   input.set_keymaps(ui, handlers, {
     state = state,
     render_fn = render_fn,
+    update_selection_fn = update_selection_fn,
     close_fn = lifecycle.close_current,
   })
 

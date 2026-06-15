@@ -316,4 +316,78 @@ describe('cosmic-ui.formatters.ui.rows', function()
     assert.are.equal(0, ensure_calls)
     assert.are.same({ 77, 77 }, seen_ns)
   end)
+
+  it('updates formatter selection from cached lines without rebuilding rows', function()
+    local render = require('cosmic-ui.formatters.ui.render')
+
+    local original_buf = vim.api.nvim_get_current_buf()
+    local original_set_lines = vim.api.nvim_buf_set_lines
+    local buf = vim.api.nvim_create_buf(false, true)
+    local win = vim.api.nvim_get_current_win()
+    local apply_calls = 0
+    local ui = {
+      buf = buf,
+      win = win,
+      selected = 2,
+      rows = {
+        {
+          kind = 'item',
+          toggleable = true,
+          lnum = 2,
+        },
+        {
+          kind = 'item',
+          toggleable = true,
+          lnum = 3,
+        },
+      },
+      rendered_lines = {
+        'header',
+        'first',
+        'second',
+      },
+    }
+    local deps = {
+      ui_state = { ns = 123 },
+      highlights = {
+        apply = function(target_buf, ns, target_ui, lines)
+          apply_calls = apply_calls + 1
+          assert.are.equal(buf, target_buf)
+          assert.are.equal(123, ns)
+          assert.are.equal(ui, target_ui)
+          assert.are.equal(ui.rendered_lines, lines)
+        end,
+      },
+      rows = {
+        get_devicons = function()
+          error('selection update should not rediscover devicons')
+        end,
+        make_icons = function()
+          error('selection update should not rebuild icons')
+        end,
+        build_rows = function()
+          error('selection update should not rebuild rows')
+        end,
+      },
+    }
+
+    vim.api.nvim_set_current_buf(buf)
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, ui.rendered_lines)
+    vim.api.nvim_buf_set_lines = function()
+      error('selection update should not rewrite buffer lines')
+    end
+
+    local ok, err = pcall(function()
+      render.update_selection(ui, deps)
+    end)
+    local cursor_after = vim.api.nvim_win_get_cursor(win)
+
+    vim.api.nvim_buf_set_lines = original_set_lines
+    vim.api.nvim_set_current_buf(original_buf)
+    vim.api.nvim_buf_delete(buf, { force = true })
+
+    assert.is_true(ok, err)
+    assert.are.equal(1, apply_calls)
+    assert.are.same({ ui.rows[2].lnum, 0 }, cursor_after)
+  end)
 end)

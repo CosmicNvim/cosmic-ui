@@ -42,7 +42,11 @@ local function move_selection(ui, delta, handlers, deps)
   local next_idx = next_toggleable_index(ui.rows, start, delta)
   if next_idx then
     ui.selected = next_idx
-    deps.render_fn(ui, handlers)
+    if deps.update_selection_fn then
+      deps.update_selection_fn(ui, handlers)
+    else
+      deps.render_fn(ui, handlers)
+    end
   end
 end
 

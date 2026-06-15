@@ -51,6 +51,25 @@ M.set_cursor_to_selected = function(ui)
   end
 end
 
+M.update_selection = function(ui, deps)
+  if not ui.buf or not vim.api.nvim_buf_is_valid(ui.buf) then
+    return
+  end
+
+  if not ui.win or not vim.api.nvim_win_is_valid(ui.win) then
+    return
+  end
+
+  M.ensure_selection(ui)
+
+  if ui.rendered_lines then
+    local ns = deps.ui_state.ns
+    deps.highlights.apply(ui.buf, ns, ui, ui.rendered_lines)
+  end
+
+  M.set_cursor_to_selected(ui)
+end
+
 M.render = function(ui, handlers, deps)
   if not ui.buf or not vim.api.nvim_buf_is_valid(ui.buf) then
     return
@@ -188,6 +207,7 @@ M.render = function(ui, handlers, deps)
   vim.api.nvim_buf_set_lines(ui.buf, 0, -1, false, lines)
   vim.bo[ui.buf].modifiable = false
   ui.icons = icons
+  ui.rendered_lines = lines
   deps.highlights.apply(ui.buf, ns, ui, lines)
 
   M.set_cursor_to_selected(ui)
