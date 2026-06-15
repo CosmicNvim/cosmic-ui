@@ -741,6 +741,177 @@ describe('cosmic-ui.codeactions.request', function()
     }, seen)
   end)
 
+  it('completes collection when a client request fails to start', function()
+    local request = require('cosmic-ui.codeactions.request')
+    local original_get_namespace = vim.lsp.diagnostic.get_namespace
+    local original_diagnostic_get = vim.diagnostic.get
+    local original_make_range_params = vim.lsp.util.make_range_params
+    local callbacks = {}
+    local seen = {}
+    local final_state
+
+    vim.lsp.diagnostic.get_namespace = function()
+      return 0
+    end
+    vim.diagnostic.get = function()
+      return {}
+    end
+    vim.lsp.util.make_range_params = function()
+      return { context = {} }
+    end
+
+    local clients = {
+      {
+        id = 1,
+        name = 'stopped',
+        offset_encoding = 'utf-16',
+        request = function()
+          return false
+        end,
+      },
+      {
+        id = 2,
+        name = 'lua_ls',
+        offset_encoding = 'utf-16',
+        request = function(_, _, _, cb)
+          callbacks[2] = cb
+          return true
+        end,
+      },
+    }
+
+    local ok, err = pcall(function()
+      request.collect({
+        bufnr = 0,
+        clients = clients,
+        on_complete = function(state)
+          table.insert(seen, {
+            status = state.status,
+            total_clients = state.total_clients,
+            completed_clients = state.completed_clients,
+            response_count = vim.tbl_count(state.responses),
+          })
+
+          if state.status == 'ready' then
+            final_state = state
+          end
+        end,
+      })
+
+      callbacks[2](nil, { { title = 'Fix two' } })
+    end)
+
+    vim.lsp.diagnostic.get_namespace = original_get_namespace
+    vim.diagnostic.get = original_diagnostic_get
+    vim.lsp.util.make_range_params = original_make_range_params
+
+    assert.is_true(ok, err)
+    assert.are.same({
+      {
+        status = 'loading',
+        total_clients = 2,
+        completed_clients = 0,
+        response_count = 0,
+      },
+      {
+        status = 'ready',
+        total_clients = 2,
+        completed_clients = 2,
+        response_count = 2,
+      },
+    }, seen)
+    assert.is_not_nil(final_state.responses[1].error)
+    assert.is_nil(final_state.responses[1].result)
+    assert.are.equal(clients[1], final_state.responses[1].client)
+    assert.are.same({ { title = 'Fix two' } }, final_state.responses[2].result)
+  end)
+
+  it('completes collection when a client request throws synchronously', function()
+    local request = require('cosmic-ui.codeactions.request')
+    local original_get_namespace = vim.lsp.diagnostic.get_namespace
+    local original_diagnostic_get = vim.diagnostic.get
+    local original_make_range_params = vim.lsp.util.make_range_params
+    local callbacks = {}
+    local seen = {}
+    local final_state
+
+    vim.lsp.diagnostic.get_namespace = function()
+      return 0
+    end
+    vim.diagnostic.get = function()
+      return {}
+    end
+    vim.lsp.util.make_range_params = function()
+      return { context = {} }
+    end
+
+    local clients = {
+      {
+        id = 1,
+        name = 'throwing',
+        offset_encoding = 'utf-16',
+        request = function()
+          error('request boom')
+        end,
+      },
+      {
+        id = 2,
+        name = 'lua_ls',
+        offset_encoding = 'utf-16',
+        request = function(_, _, _, cb)
+          callbacks[2] = cb
+          return true
+        end,
+      },
+    }
+
+    local ok, err = pcall(function()
+      request.collect({
+        bufnr = 0,
+        clients = clients,
+        on_complete = function(state)
+          table.insert(seen, {
+            status = state.status,
+            total_clients = state.total_clients,
+            completed_clients = state.completed_clients,
+            response_count = vim.tbl_count(state.responses),
+          })
+
+          if state.status == 'ready' then
+            final_state = state
+          end
+        end,
+      })
+
+      callbacks[2](nil, { { title = 'Fix two' } })
+    end)
+
+    vim.lsp.diagnostic.get_namespace = original_get_namespace
+    vim.diagnostic.get = original_diagnostic_get
+    vim.lsp.util.make_range_params = original_make_range_params
+
+    assert.is_true(ok, err)
+    assert.are.same({
+      {
+        status = 'loading',
+        total_clients = 2,
+        completed_clients = 0,
+        response_count = 0,
+      },
+      {
+        status = 'ready',
+        total_clients = 2,
+        completed_clients = 2,
+        response_count = 2,
+      },
+    }, seen)
+    assert.is_not_nil(final_state.responses[1].error)
+    assert.is_true(string.find(final_state.responses[1].error.message, 'request boom', 1, true) ~= nil)
+    assert.is_nil(final_state.responses[1].result)
+    assert.are.equal(clients[1], final_state.responses[1].client)
+    assert.are.same({ { title = 'Fix two' } }, final_state.responses[2].result)
+  end)
+
   it('freezes the source buffer before the loading callback changes current buffer', function()
     local request = require('cosmic-ui.codeactions.request')
     local original_get_namespace = vim.lsp.diagnostic.get_namespace

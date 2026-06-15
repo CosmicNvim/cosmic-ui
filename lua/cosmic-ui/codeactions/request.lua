@@ -76,29 +76,57 @@ M.collect = function(opts)
     on_complete(request_state, user_opts)
   end
 
+  local completed = {}
+  local function normalize_error(err)
+    if type(err) == 'table' then
+      return err
+    end
+
+    return {
+      message = tostring(err or 'textDocument/codeAction request failed to start'),
+    }
+  end
+
+  local function complete_request(client, err, result)
+    if completed[client.id] then
+      return
+    end
+
+    completed[client.id] = true
+    results_lsp[client.id] = {
+      error = err,
+      result = result,
+      client = client,
+    }
+
+    request_state.completed_clients = request_state.completed_clients + 1
+    pending = pending - 1
+    if pending > 0 then
+      return
+    end
+
+    if on_complete then
+      request_state.status = 'ready'
+      on_complete(request_state, user_opts)
+    end
+  end
+
   local function on_result(client)
     return function(err, result)
-      results_lsp[client.id] = {
-        error = err,
-        result = result,
-        client = client,
-      }
-
-      request_state.completed_clients = request_state.completed_clients + 1
-      pending = pending - 1
-      if pending > 0 then
-        return
-      end
-
-      if on_complete then
-        request_state.status = 'ready'
-        on_complete(request_state, user_opts)
-      end
+      complete_request(client, err, result)
     end
   end
 
   for _, prepared in ipairs(prepared_requests) do
-    prepared.client:request('textDocument/codeAction', prepared.params, on_result(prepared.client), bufnr)
+    local ok, started = pcall(function()
+      return prepared.client:request('textDocument/codeAction', prepared.params, on_result(prepared.client), bufnr)
+    end)
+
+    if not ok then
+      complete_request(prepared.client, normalize_error(started), nil)
+    elseif started == false then
+      complete_request(prepared.client, normalize_error(), nil)
+    end
   end
 end
 
