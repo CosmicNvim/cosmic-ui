@@ -26,9 +26,13 @@ local function apply_selection(ui)
     })
   end
 
-  if ui.selected and ui.action_line_by_idx and ui.action_line_by_idx[ui.selected] and ui.win and vim.api.nvim_win_is_valid(
-      ui.win
-    ) then
+  if
+    ui.selected
+    and ui.action_line_by_idx
+    and ui.action_line_by_idx[ui.selected]
+    and ui.win
+    and vim.api.nvim_win_is_valid(ui.win)
+  then
     pcall(vim.api.nvim_win_set_cursor, ui.win, { ui.action_line_by_idx[ui.selected], 0 })
   end
 end

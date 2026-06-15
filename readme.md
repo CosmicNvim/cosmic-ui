@@ -204,3 +204,20 @@ More usage examples:
 - Rename: [`docs/rename.md`](docs/rename.md)
 - Codeactions: [`docs/codeactions.md`](docs/codeactions.md)
 - Formatters: [`docs/formatters.md`](docs/formatters.md)
+
+## Development
+
+Local validation requires Neovim 0.11+, Plenary.nvim on your runtimepath, and Stylua.
+
+Run the full local check with:
+
+```sh
+make check
+```
+
+The underlying commands are:
+
+```sh
+stylua --check lua plugin tests
+nvim --headless -u tests/minimal_init.lua -c "PlenaryBustedDirectory tests { minimal_init = 'tests/minimal_init.lua' }" -c qa
+```
