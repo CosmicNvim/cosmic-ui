@@ -1,5 +1,13 @@
 local M = {}
 
+local function border_extent(border)
+  if border == nil or border == '' then
+    return 0
+  end
+
+  return 2
+end
+
 M.create_scratch_buf = function(opts)
   opts = opts or {}
   local buf = vim.api.nvim_create_buf(false, true)
@@ -17,14 +25,27 @@ M.create_scratch_buf = function(opts)
   return buf
 end
 
+M.fit_float_size = function(width, height, opts)
+  opts = opts or {}
+  local border = border_extent(opts.border)
+  local available_width = math.max(1, vim.o.columns - border)
+  local available_height = math.max(1, vim.o.lines - vim.o.cmdheight - border)
+  local max_width = opts.max_width or math.floor(available_width * (opts.width_ratio or 1))
+  local max_height = opts.max_height or math.floor(available_height * (opts.height_ratio or 1))
+
+  max_width = math.max(1, math.min(max_width, available_width))
+  max_height = math.max(1, math.min(max_height, available_height))
+
+  return math.max(1, math.min(width, max_width)), math.max(1, math.min(height, max_height))
+end
+
 M.centered_float_config = function(width, height, opts)
   opts = opts or {}
-  local max_width = opts.max_width or math.max(50, math.floor(vim.o.columns * 0.9))
-  local max_height = opts.max_height or math.max(14, math.floor((vim.o.lines - vim.o.cmdheight) * 0.8))
-  local clamped_width = math.min(width, max_width)
-  local clamped_height = math.min(height, max_height)
-  local row = math.max(1, math.floor(((vim.o.lines - vim.o.cmdheight) - clamped_height) / 2))
-  local col = math.max(0, math.floor((vim.o.columns - clamped_width) / 2))
+  local clamped_width, clamped_height = M.fit_float_size(width, height, opts)
+  local border = border_extent(opts.border)
+  local usable_height = math.max(1, vim.o.lines - vim.o.cmdheight)
+  local row = math.max(0, math.floor((usable_height - clamped_height - border) / 2))
+  local col = math.max(0, math.floor((vim.o.columns - clamped_width - border) / 2))
 
   return {
     width = clamped_width,

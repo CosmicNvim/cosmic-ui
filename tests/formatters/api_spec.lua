@@ -27,6 +27,7 @@ describe('cosmic-ui.formatters api', function()
   local created_buffers
   local notifications
   local lsp_format_calls
+  local lsp_format_buffers
 
   local function new_buffer(filetype)
     local bufnr = vim.api.nvim_create_buf(false, true)
@@ -97,6 +98,7 @@ describe('cosmic-ui.formatters api', function()
     created_buffers = {}
     notifications = {}
     lsp_format_calls = {}
+    lsp_format_buffers = {}
     package.loaded.conform = nil
     reset_formatter_modules()
 
@@ -124,6 +126,7 @@ describe('cosmic-ui.formatters api', function()
 
     vim.lsp.buf.format = function(opts)
       table.insert(lsp_format_calls, opts)
+      table.insert(lsp_format_buffers, vim.api.nvim_get_current_buf())
     end
   end)
 
@@ -246,8 +249,154 @@ describe('cosmic-ui.formatters api', function()
     assert.are.equal(bufnr, lsp_format_calls[1].bufnr)
     assert.is_false(lsp_format_calls[1].async)
     assert.are.equal(1000, lsp_format_calls[1].timeout_ms)
+    assert.are.equal(bufnr, lsp_format_buffers[1])
     assert.is_true(lsp_format_calls[1].filter(lua_ls))
     assert.is_false(lsp_format_calls[1].filter(eslint))
+  end)
+
+  it('keeps every async LSP request tied to the target buffer', function()
+    local formatters = setup_formatters()
+    local target_bufnr = new_buffer('lua')
+    local other_bufnr = new_buffer('lua')
+    local callbacks = {}
+    local requests = {}
+
+    vim.bo[target_bufnr].shiftwidth = 2
+    vim.bo[target_bufnr].expandtab = true
+    vim.bo[other_bufnr].shiftwidth = 8
+    vim.bo[other_bufnr].expandtab = false
+
+    local function async_client(id, name)
+      return {
+        id = id,
+        name = name,
+        offset_encoding = 'utf-16',
+        handlers = {},
+        server_capabilities = { documentFormattingProvider = true },
+        supports_method = function(_, method, bufnr)
+          return method == 'textDocument/formatting' and bufnr == target_bufnr
+        end,
+        request = function(_, method, params, callback, bufnr)
+          table.insert(requests, {
+            name = name,
+            method = method,
+            params = params,
+            bufnr = bufnr,
+          })
+          callbacks[name] = callback
+          return true
+        end,
+      }
+    end
+
+    local first = async_client(1, 'first')
+    local second = async_client(2, 'second')
+    vim.lsp.get_clients = function(opts)
+      assert.are.equal(target_bufnr, opts.bufnr)
+      return { second, first }
+    end
+
+    vim.api.nvim_set_current_buf(target_bufnr)
+    assert.is_true(formatters.format_async({ backend = 'lsp', bufnr = target_bufnr }))
+    assert.are.equal(1, #requests)
+    assert.are.equal('first', requests[1].name)
+
+    vim.api.nvim_set_current_buf(other_bufnr)
+    callbacks.first(nil, nil, { client_id = first.id, bufnr = target_bufnr })
+
+    assert.are.equal(2, #requests)
+    assert.are.equal('second', requests[2].name)
+    for _, request in ipairs(requests) do
+      assert.are.equal('textDocument/formatting', request.method)
+      assert.are.equal(target_bufnr, request.bufnr)
+      assert.are.equal(vim.uri_from_bufnr(target_bufnr), request.params.textDocument.uri)
+      assert.are.equal(2, request.params.options.tabSize)
+      assert.is_true(request.params.options.insertSpaces)
+    end
+
+    callbacks.second(nil, nil, { client_id = second.id, bufnr = target_bufnr })
+  end)
+
+  it('uses range formatting clients when a range is requested', function()
+    local formatters = setup_formatters()
+    local bufnr = new_buffer('lua')
+    local seen
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { 'hello world' })
+    local range_client = {
+      id = 1,
+      name = 'range-only',
+      offset_encoding = 'utf-16',
+      handlers = {},
+      server_capabilities = {
+        documentFormattingProvider = false,
+        documentRangeFormattingProvider = true,
+      },
+      supports_method = function(_, method)
+        return method == 'textDocument/rangeFormatting'
+      end,
+      request = function(_, method, params, callback, target_bufnr)
+        seen = {
+          method = method,
+          params = params,
+          bufnr = target_bufnr,
+        }
+        callback(nil, nil, { client_id = 1, bufnr = target_bufnr })
+        return true
+      end,
+    }
+
+    vim.lsp.get_clients = function(opts)
+      assert.are.equal(bufnr, opts.bufnr)
+      return { range_client }
+    end
+
+    assert.is_true(formatters.format_async({
+      backend = 'lsp',
+      bufnr = bufnr,
+      lsp = {
+        range = {
+          start = { 1, 0 },
+          ['end'] = { 1, 5 },
+        },
+      },
+    }))
+
+    assert.are.equal('textDocument/rangeFormatting', seen.method)
+    assert.are.equal(bufnr, seen.bufnr)
+    assert.are.equal(vim.uri_from_bufnr(bufnr), seen.params.textDocument.uri)
+    local expected_end_character = vim.o.selection == 'exclusive' and 5 or 6
+    assert.are.same({
+      start = { line = 0, character = 0 },
+      ['end'] = { line = 0, character = expected_end_character },
+    }, seen.params.range)
+  end)
+
+  it('checks LSP formatting support for the target buffer', function()
+    local formatters = setup_formatters()
+    local target_bufnr = new_buffer('lua')
+    local current_bufnr = new_buffer('text')
+    local supports_bufnr
+    local dynamic_client = {
+      id = 1,
+      name = 'dynamic-formatter',
+      server_capabilities = {},
+      supports_method = function(_, method, bufnr)
+        supports_bufnr = bufnr
+        return method == 'textDocument/formatting' and bufnr == target_bufnr
+      end,
+    }
+
+    vim.api.nvim_set_current_buf(current_bufnr)
+    vim.lsp.get_clients = function(opts)
+      assert.are.equal(target_bufnr, opts.bufnr)
+      return { dynamic_client }
+    end
+
+    local snapshot = formatters.status({ bufnr = target_bufnr })
+
+    assert.are.equal(target_bufnr, supports_bufnr)
+    assert.is_true(snapshot.lsp_clients[1].available)
+    assert.is_true(snapshot.lsp_clients[1].effective_enabled)
   end)
 
   it('excludes disabled LSP items from the formatting filter', function()
@@ -331,6 +480,53 @@ describe('cosmic-ui.formatters api', function()
     }))
 
     assert.are.equal(1, #conform_calls)
+    assert.are.equal('never', conform_calls[1].lsp_format)
+  end)
+
+  it('discovers Conform CLI formatters independently from configured LSP routing', function()
+    local conform_calls = {}
+    local discovery_calls = 0
+    local routed_discovery_calls = 0
+    local formatters = setup_formatters()
+    local bufnr = new_buffer('lua')
+    local lua_ls = lsp_client(1, 'lua_ls', true)
+
+    vim.lsp.get_clients = function()
+      return { lua_ls }
+    end
+
+    stub_conform(nil, function(opts)
+      table.insert(conform_calls, opts)
+    end, {
+      list_formatters = function(target_bufnr)
+        assert.are.equal(bufnr, target_bufnr)
+        discovery_calls = discovery_calls + 1
+        return { { name = 'stylua' } }
+      end,
+      list_formatters_to_run = function()
+        routed_discovery_calls = routed_discovery_calls + 1
+        return {}, true
+      end,
+      default_format_opts = {
+        lsp_format = 'prefer',
+      },
+      formatters_by_ft = {
+        lua = { 'stylua' },
+      },
+    })
+
+    formatters.disable({ backend = 'lsp', bufnr = bufnr })
+    discovery_calls = 0
+
+    assert.is_true(formatters.format({
+      backend = { 'conform', 'lsp' },
+      bufnr = bufnr,
+    }))
+
+    assert.are.equal(1, discovery_calls)
+    assert.are.equal(0, routed_discovery_calls)
+    assert.are.equal(1, #conform_calls)
+    assert.are.same({ 'stylua' }, conform_calls[1].formatters)
     assert.are.equal('never', conform_calls[1].lsp_format)
   end)
 

@@ -204,6 +204,23 @@ describe('cosmic-ui.rename.ui', function()
     assert.are.equal('draft2', submitted)
   end)
 
+  it('deletes the whole previous multibyte character on backspace', function()
+    stub_rename_context('current_name')
+
+    local ui = require('cosmic-ui.rename.ui')
+
+    ui.open({
+      default_value = 'café',
+    })
+
+    press('A<BS>')
+
+    local line = vim.api.nvim_get_current_line()
+
+    assert.are.equal('> caf', line)
+    assert.are.equal(5, vim.str_utfindex(line))
+  end)
+
   it('keeps the compact rename buffer modifiable for prompt editing', function()
     stub_rename_context('current_name')
 

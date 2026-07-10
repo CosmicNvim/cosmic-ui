@@ -152,8 +152,10 @@ M.set_keymaps = function(ui, handlers, deps)
   end)
 
   map('f', function()
-    handlers.format_async_fn({ scope = ui.scope, bufnr = ui.target_bufnr })
+    local scope = ui.scope
+    local target_bufnr = ui.target_bufnr
     deps.close_fn()
+    handlers.format_async_fn({ scope = scope, bufnr = target_bufnr })
   end)
 
   map('<CR>', deps.close_fn)

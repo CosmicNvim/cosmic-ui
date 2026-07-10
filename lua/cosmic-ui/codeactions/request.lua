@@ -2,8 +2,12 @@ local M = {}
 
 local function code_action_diagnostics(client_id, bufnr, lnum)
   local diagnostics = {}
-  local ns_push = vim.lsp.diagnostic.get_namespace(client_id, false)
-  local ns_pull = vim.lsp.diagnostic.get_namespace(client_id, true)
+  local client = vim.lsp.get_client_by_id(client_id)
+  local capabilities = client and client.server_capabilities or {}
+  local diagnostic_provider = capabilities.diagnosticProvider
+  local pull_id = type(diagnostic_provider) == 'table' and diagnostic_provider.identifier or nil
+  local ns_push = vim.lsp.diagnostic.get_namespace(client_id)
+  local ns_pull = vim.lsp.diagnostic.get_namespace(client_id, pull_id or 'nil')
 
   vim.list_extend(diagnostics, vim.diagnostic.get(bufnr, { namespace = ns_pull, lnum = lnum }))
   vim.list_extend(diagnostics, vim.diagnostic.get(bufnr, { namespace = ns_push, lnum = lnum }))
@@ -97,6 +101,7 @@ M.collect = function(opts)
       error = err,
       result = result,
       client = client,
+      bufnr = bufnr,
     }
 
     request_state.completed_clients = request_state.completed_clients + 1

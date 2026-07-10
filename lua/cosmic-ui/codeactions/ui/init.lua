@@ -28,15 +28,32 @@ end
 local function submit_action(action)
   local client = action.client
   local command = action.command
+  local context = action.bufnr and { bufnr = action.bufnr } or nil
 
   if not client then
     logger:warn('Code action client is no longer available')
     return
   end
 
-  if not command.edit and transform.supports_code_action_resolve(client) then
+  if command.disabled then
+    logger:error(command.disabled.reason or 'Code action is disabled')
+    return
+  end
+
+  local is_command = type(command.title) == 'string' and type(command.command) == 'string'
+  if is_command then
+    transform.execute_action(transform.transform_action(command), client, context)
+    return
+  end
+
+  if not (command.edit and command.command) and transform.supports_code_action_resolve(client, action.bufnr) then
     client:request('codeAction/resolve', command, function(resolved_err, resolved_action)
       if resolved_err then
+        if command.edit or command.command then
+          transform.execute_action(transform.transform_action(command), client, context)
+          return
+        end
+
         local code = resolved_err.code or 'unknown'
         local msg = resolved_err.message or vim.inspect(resolved_err)
         logger:error(code .. ': ' .. msg)
@@ -44,15 +61,15 @@ local function submit_action(action)
       end
 
       if resolved_action then
-        transform.execute_action(transform.transform_action(resolved_action), client)
+        transform.execute_action(transform.transform_action(resolved_action), client, context)
       else
-        transform.execute_action(transform.transform_action(command), client)
+        transform.execute_action(transform.transform_action(command), client, context)
       end
-    end)
+    end, action.bufnr)
     return
   end
 
-  transform.execute_action(transform.transform_action(command), client)
+  transform.execute_action(transform.transform_action(command), client, context)
 end
 
 M.open = function(results_lsp, user_opts)
@@ -95,6 +112,13 @@ M.open = function(results_lsp, user_opts)
     border_style = nil
   end
 
+  local initial_width, initial_height =
+    window.fit_float_size(math.max((user_opts.min_width or built.min_width or 30) + 2, 32), 1, {
+      width_ratio = 0.9,
+      height_ratio = 0.7,
+      border = border_style,
+    })
+
   local buf = window.create_scratch_buf({
     filetype = 'cosmicui-codeactions',
     modifiable = false,
@@ -108,8 +132,8 @@ M.open = function(results_lsp, user_opts)
     relative = 'cursor',
     row = 1,
     col = 0,
-    width = math.max((user_opts.min_width or built.min_width or 30) + 2, 32),
-    height = 1,
+    width = initial_width,
+    height = initial_height,
     border = border_style,
     title = border.title,
     title_pos = border.title_align,

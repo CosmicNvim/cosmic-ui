@@ -91,14 +91,17 @@ M.build = function(results_lsp)
 
       for _, result in ipairs(response.result) do
         local command_title = sanitize_title(result.title or '')
+        local display_title = result.disabled and (command_title .. ' (disabled)') or command_title
         local action = {
           kind = 'action',
-          text = command_title,
+          text = display_title,
           client = client,
           command = result,
+          bufnr = response.bufnr,
+          disabled = result.disabled,
         }
 
-        min_width = math.max(min_width, vim.fn.strdisplaywidth(command_title), 30)
+        min_width = math.max(min_width, vim.fn.strdisplaywidth(display_title), 30)
         table.insert(rows, action)
         table.insert(actions, action)
       end

@@ -73,11 +73,16 @@ M.get_conform_formatter_names = function(bufnr)
     return nil, 'conform_not_installed'
   end
 
-  if type(conform.list_formatters_to_run) ~= 'function' then
+  local discover = conform.list_formatters
+  if type(discover) ~= 'function' then
+    discover = conform.list_formatters_to_run
+  end
+
+  if type(discover) ~= 'function' then
     return {}, nil
   end
 
-  local ok, first, second = pcall(conform.list_formatters_to_run, bufnr)
+  local ok, first, second = pcall(discover, bufnr)
   if not ok then
     logger:error(('Conform formatter discovery failed: %s'):format(first))
     return {}, nil

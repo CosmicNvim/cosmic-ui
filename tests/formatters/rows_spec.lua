@@ -390,4 +390,100 @@ describe('cosmic-ui.formatters.ui.rows', function()
     assert.are.equal(1, apply_calls)
     assert.are.same({ ui.rows[2].lnum, 0 }, cursor_after)
   end)
+
+  it('keeps selectable rows within height-truncated formatter output', function()
+    local constants = require('cosmic-ui.formatters.constants')
+    local render = require('cosmic-ui.formatters.ui.render')
+
+    local original_buf = vim.api.nvim_get_current_buf()
+    local buf = vim.api.nvim_create_buf(false, true)
+    local all_rows = {}
+    for idx = 1, 40 do
+      table.insert(all_rows, {
+        id = 'formatter_' .. idx,
+        kind = 'item',
+        text = 'formatter ' .. idx,
+        toggleable = true,
+        status = 'enabled',
+        status_icon = '+',
+        source_icon = 'C',
+        action = {
+          kind = 'item',
+          source = 'conform',
+          name = 'formatter_' .. idx,
+        },
+      })
+    end
+
+    local ui = {
+      buf = buf,
+      win = vim.api.nvim_get_current_win(),
+      scope = 'buffer',
+      target_bufnr = buf,
+      selected = 30,
+      rows = {},
+      footer = {},
+    }
+    local deps = {
+      logger = {},
+      close_fn = function()
+        error('render should not close the panel')
+      end,
+      ui_state = { ns = 123 },
+      constants = constants,
+      highlights = {
+        apply = function() end,
+      },
+      rows = {
+        get_devicons = function()
+          return {}
+        end,
+        make_icons = function()
+          return {
+            file = 'F',
+            filetype = 'lua',
+          }
+        end,
+        build_rows = function()
+          return all_rows
+        end,
+      },
+      window = {
+        centered_float_config = function(width, height)
+          return {
+            row = 1,
+            col = 1,
+            width = width,
+            height = height,
+          }
+        end,
+        set_float_config = function() end,
+      },
+    }
+
+    vim.api.nvim_set_current_buf(buf)
+    render.render(ui, {
+      status_fn = function()
+        return {}
+      end,
+    }, deps)
+
+    local window = require('cosmic-ui.window')
+    local border = vim.o.winborder ~= '' and vim.o.winborder or nil
+    local _, max_height = window.fit_float_size(1, vim.o.lines, {
+      height_ratio = 0.8,
+      border = border,
+    })
+
+    vim.api.nvim_set_current_buf(original_buf)
+    vim.api.nvim_buf_delete(buf, { force = true })
+
+    assert.are.equal(max_height, #ui.rendered_lines)
+    assert.are.equal('...', rstrip(ui.rendered_lines[#ui.rendered_lines]))
+    assert.is_true(#ui.rows < #all_rows)
+    assert.are.equal(1, ui.selected)
+    for _, row in ipairs(ui.rows) do
+      assert.is_true(row.lnum < max_height)
+    end
+  end)
 end)

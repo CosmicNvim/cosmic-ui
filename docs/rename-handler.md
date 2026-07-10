@@ -7,7 +7,7 @@ Handles LSP rename responses:
 - logs file-level change summaries
 - applies workspace edits with the active client's offset encoding
 
-This is an internal helper used by `lua/cosmic-ui/rename/init.lua`.
+This is an optional low-level handler for direct LSP requests. The standard rename UI delegates to `vim.lsp.buf.rename()` instead.
 
 ## Exposed API
 

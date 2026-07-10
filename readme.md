@@ -1,7 +1,9 @@
 <h1 align="center">💫 Cosmic-UI</h1>
 
 <p align="center">
-  <img alt="Neovim Minimum Version" src="https://img.shields.io/badge/Neovim-0.11.0+-blueviolet.svg?style=flat-square&logo=Neovim&logoColor=white)](https://github.com/neovim/neovim">
+  <a href="https://github.com/neovim/neovim">
+    <img alt="Neovim Minimum Version" src="https://img.shields.io/badge/Neovim-0.11.0+-blueviolet.svg?style=flat-square&logo=Neovim&logoColor=white">
+  </a>
   <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/CosmicNvim/cosmic-ui?style=flat-square&logo=Github">
   <a href="https://discord.gg/EwdrKzVbvJ">
     <img alt="Discord" src="https://img.shields.io/discord/901609359291854899?style=flat-square&logo=Discord">
@@ -36,7 +38,6 @@ Stable lazy.nvim example:
 {
   "CosmicNvim/cosmic-ui",
   dependencies = {
-    "nvim-lua/plenary.nvim",
     "nvim-tree/nvim-web-devicons",
   },
   config = function()
@@ -53,7 +54,6 @@ Native vim.pack example:
 
 ```lua
 vim.pack.add({
-  "https://github.com/nvim-lua/plenary.nvim",
   "https://github.com/nvim-tree/nvim-web-devicons",
   "https://github.com/CosmicNvim/cosmic-ui",
 })
@@ -234,6 +234,12 @@ Run the full local check with:
 
 ```sh
 make check
+```
+
+Run the public-API headless LSP smoke test on its own with:
+
+```sh
+make smoke
 ```
 
 The underlying commands are:

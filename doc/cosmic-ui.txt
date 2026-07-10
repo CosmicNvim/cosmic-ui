@@ -43,7 +43,6 @@ Open this help any time with: >
 2. Requirements                                           *cosmic-ui-requirements*
 
 - Neovim 0.11 or newer
-- plenary.nvim
 - nvim-web-devicons for the formatters UI
 
 If setup has not been called, or if a module is disabled, module calls warn and
@@ -56,7 +55,6 @@ Example with lazy.nvim: >
   {
     "CosmicNvim/cosmic-ui",
     dependencies = {
-      "nvim-lua/plenary.nvim",
       "nvim-tree/nvim-web-devicons",
     },
     config = function()
@@ -71,7 +69,6 @@ Example with lazy.nvim: >
 
 Example with native vim.pack: >
   vim.pack.add({
-    "https://github.com/nvim-lua/plenary.nvim",
     "https://github.com/nvim-tree/nvim-web-devicons",
     "https://github.com/CosmicNvim/cosmic-ui",
   })
@@ -436,8 +433,7 @@ Conform fallback or skipped formatting:
 
 Formatters UI fails with a devicons error:
 
-- Install `nvim-web-devicons`. The formatters UI requires it in addition to
-  `plenary.nvim`.
+- Install `nvim-web-devicons`.
 
 General LSP debugging:
 

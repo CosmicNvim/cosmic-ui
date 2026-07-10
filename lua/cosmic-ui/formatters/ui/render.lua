@@ -1,12 +1,7 @@
 local panel = require('cosmic-ui.ui.panel')
+local window = require('cosmic-ui.window')
 
 local M = {}
-
-local function clamp_ui_size(width, height)
-  local max_width = math.max(50, math.floor(vim.o.columns * 0.9))
-  local max_height = math.max(14, math.floor((vim.o.lines - vim.o.cmdheight) * 0.8))
-  return math.min(width, max_width), math.min(height, max_height)
-end
 
 local function row_display_text(row)
   if row.kind == 'section' and row.subtitle and row.subtitle ~= '' then
@@ -92,9 +87,6 @@ M.render = function(ui, handlers, deps)
   local rows = deps.rows.build_rows(status, icons, deps.constants.status_icons)
   local footer = panel.build({ footer = ui.footer }).footer
 
-  ui.rows = rows
-  M.ensure_selection(ui)
-
   local header_left = ('%s %s'):format(icons.file, icons.filetype)
   local header_right = ('Scope: %s'):format(ui.scope)
   local content_lines = {}
@@ -162,15 +154,31 @@ M.render = function(ui, handlers, deps)
     end
   end
 
-  local max_height = math.max(14, math.floor((vim.o.lines - vim.o.cmdheight) * 0.8))
+  local border = vim.o.winborder ~= '' and vim.o.winborder or nil
+  local _, max_height = window.fit_float_size(1, vim.o.lines, {
+    height_ratio = 0.8,
+    border = border,
+  })
   if #lines > max_height then
     lines = vim.list_slice(lines, 1, max_height)
     lines[#lines] = '...'
+
+    local visible_rows = {}
+    for _, row in ipairs(rows) do
+      if row.lnum < max_height then
+        table.insert(visible_rows, row)
+      end
+    end
+    rows = visible_rows
+
     if ui.footer_lnum and ui.footer_lnum >= #lines then
       ui.footer_lnum = nil
       ui.footer_spans = nil
     end
   end
+
+  ui.rows = rows
+  M.ensure_selection(ui)
 
   local width = 0
   for _, line in ipairs(lines) do
@@ -178,7 +186,11 @@ M.render = function(ui, handlers, deps)
   end
   width = math.max(width + 2, 64)
   local height = #lines
-  width, height = clamp_ui_size(width, height)
+  width, height = window.fit_float_size(width, height, {
+    width_ratio = 0.9,
+    height_ratio = 0.8,
+    border = border,
+  })
 
   for i, line in ipairs(lines) do
     local display = vim.fn.strdisplaywidth(line)
@@ -187,8 +199,7 @@ M.render = function(ui, handlers, deps)
     end
   end
 
-  local centered = deps.window.centered_float_config(width, height)
-  local border = vim.o.winborder ~= '' and vim.o.winborder or nil
+  local centered = deps.window.centered_float_config(width, height, { border = border })
   local win_config = {
     relative = 'editor',
     style = 'minimal',

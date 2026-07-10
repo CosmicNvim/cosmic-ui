@@ -26,6 +26,11 @@ describe('cosmic-ui.codeactions.ui', function()
     return false
   end
 
+  local function submit_selected()
+    vim.api.nvim_feedkeys(vim.keycode('<CR>'), 'xt', false)
+    vim.cmd('redraw')
+  end
+
   before_each(function()
     lifecycle = require('cosmic-ui.codeactions.ui.lifecycle')
     lifecycle.close_current()
@@ -583,6 +588,231 @@ describe('cosmic-ui.codeactions.ui', function()
     assert.is_nil(lifecycle.get_state().ui)
   end)
 
+  it('executes plain commands directly with their source buffer context', function()
+    local ui = require('cosmic-ui.codeactions.ui')
+    local source_buf = vim.api.nvim_get_current_buf()
+    local requests = {}
+    local executions = {}
+    local client = {
+      id = 1,
+      name = 'lua_ls',
+      offset_encoding = 'utf-16',
+      server_capabilities = {
+        codeActionProvider = { resolveProvider = true },
+      },
+      supports_method = function()
+        return true
+      end,
+      request = function(_, method)
+        table.insert(requests, method)
+        return true
+      end,
+      exec_cmd = function(_, command, context)
+        table.insert(executions, { command = command, context = context })
+      end,
+    }
+    local command = {
+      title = 'Run command',
+      command = 'lua.runCommand',
+      arguments = { 'value' },
+    }
+
+    ui.open({
+      [1] = {
+        bufnr = source_buf,
+        client = client,
+        result = { command },
+      },
+    }, {})
+    submit_selected()
+
+    assert.are.same({}, requests)
+    assert.are.same({
+      {
+        command = command,
+        context = { bufnr = source_buf },
+      },
+    }, executions)
+  end)
+
+  it('shows disabled actions but does not resolve or execute them', function()
+    local ui = require('cosmic-ui.codeactions.ui')
+    local original_notify = vim.notify
+    local notifications = {}
+    local client = {
+      id = 1,
+      name = 'lua_ls',
+      offset_encoding = 'utf-16',
+      supports_method = function()
+        return true
+      end,
+      request = function()
+        error('disabled code action should not be resolved')
+      end,
+      exec_cmd = function()
+        error('disabled code action should not be executed')
+      end,
+    }
+
+    vim.notify = function(message, level)
+      table.insert(notifications, { message = message, level = level })
+    end
+
+    local ok, err = pcall(function()
+      ui.open({
+        [1] = {
+          bufnr = vim.api.nvim_get_current_buf(),
+          client = client,
+          result = {
+            {
+              title = 'Unavailable fix',
+              disabled = { reason = 'No valid edit is available' },
+              data = { id = 1 },
+            },
+          },
+        },
+      }, {})
+
+      local state = lifecycle.get_state()
+      assert.is_true(
+        vim.tbl_contains(vim.api.nvim_buf_get_lines(state.ui.buf, 0, -1, false), ' Unavailable fix (disabled) ')
+      )
+      submit_selected()
+    end)
+
+    vim.notify = original_notify
+    if not ok then
+      error(err)
+    end
+
+    assert.are.same({
+      {
+        message = 'No valid edit is available',
+        level = vim.log.levels.ERROR,
+      },
+    }, notifications)
+  end)
+
+  it('falls back to an embedded command when resolve fails and preserves context', function()
+    local ui = require('cosmic-ui.codeactions.ui')
+    local source_buf = vim.api.nvim_get_current_buf()
+    local seen = {}
+    local embedded_command = {
+      title = 'Apply fallback',
+      command = 'lua.applyFallback',
+    }
+    local action = {
+      title = 'Apply fallback',
+      command = embedded_command,
+      data = { id = 1 },
+    }
+    local client = {
+      id = 1,
+      name = 'lua_ls',
+      offset_encoding = 'utf-16',
+      supports_method = function(_, method, bufnr)
+        seen.supports = { method = method, bufnr = bufnr }
+        return true
+      end,
+      request = function(_, method, params, callback, bufnr)
+        seen.request = { method = method, params = params, bufnr = bufnr }
+        callback({ code = -32603, message = 'resolve failed' }, nil)
+        return true
+      end,
+      exec_cmd = function(_, command, context)
+        seen.execution = { command = command, context = context }
+      end,
+    }
+
+    ui.open({
+      [1] = {
+        bufnr = source_buf,
+        client = client,
+        result = { action },
+      },
+    }, {})
+    submit_selected()
+
+    assert.are.same({ method = 'codeAction/resolve', bufnr = source_buf }, seen.supports)
+    assert.are.same({
+      method = 'codeAction/resolve',
+      params = action,
+      bufnr = source_buf,
+    }, seen.request)
+    assert.are.same({
+      command = embedded_command,
+      context = { bufnr = source_buf },
+    }, seen.execution)
+  end)
+
+  it('resolves edit-only actions before applying the completed action', function()
+    local ui = require('cosmic-ui.codeactions.ui')
+    local source_buf = vim.api.nvim_get_current_buf()
+    local original_apply_workspace_edit = vim.lsp.util.apply_workspace_edit
+    local seen = {}
+    local edit = { changes = {} }
+    local resolved_command = {
+      title = 'Finish action',
+      command = 'lua.finishAction',
+    }
+    local action = {
+      title = 'Apply edit and finish',
+      edit = edit,
+      data = { id = 1 },
+    }
+    local client = {
+      id = 1,
+      name = 'lua_ls',
+      offset_encoding = 'utf-16',
+      supports_method = function()
+        return true
+      end,
+      request = function(_, method, params, callback, bufnr)
+        seen.request = { method = method, params = params, bufnr = bufnr }
+        callback(nil, {
+          title = action.title,
+          edit = edit,
+          command = resolved_command,
+        })
+        return true
+      end,
+      exec_cmd = function(_, command, context)
+        seen.execution = { command = command, context = context }
+      end,
+    }
+
+    vim.lsp.util.apply_workspace_edit = function(workspace_edit, offset_encoding)
+      seen.edit = { workspace_edit = workspace_edit, offset_encoding = offset_encoding }
+    end
+
+    local ok, err = pcall(function()
+      ui.open({
+        [1] = {
+          bufnr = source_buf,
+          client = client,
+          result = { action },
+        },
+      }, {})
+      submit_selected()
+    end)
+
+    vim.lsp.util.apply_workspace_edit = original_apply_workspace_edit
+    if not ok then
+      error(err)
+    end
+
+    assert.are.same({
+      method = 'codeAction/resolve',
+      params = action,
+      bufnr = source_buf,
+    }, seen.request)
+    assert.are.same({ workspace_edit = edit, offset_encoding = 'utf-16' }, seen.edit)
+    assert.are.same({
+      command = resolved_command,
+      context = { bufnr = source_buf },
+    }, seen.execution)
+  end)
+
   it('does not install numeric direct-pick keymaps', function()
     local input = require('cosmic-ui.codeactions.ui.input')
 
@@ -667,12 +897,28 @@ describe('cosmic-ui.codeactions.request', function()
   it('reports loading before ready and keeps request metadata', function()
     local request = require('cosmic-ui.codeactions.request')
     local original_get_namespace = vim.lsp.diagnostic.get_namespace
+    local original_get_client_by_id = vim.lsp.get_client_by_id
     local original_diagnostic_get = vim.diagnostic.get
     local original_make_range_params = vim.lsp.util.make_range_params
     local callbacks = {}
     local seen = {}
+    local source_buf = vim.api.nvim_get_current_buf()
+    local final_state
+    local namespace_calls = {}
 
-    vim.lsp.diagnostic.get_namespace = function()
+    vim.lsp.get_client_by_id = function(client_id)
+      return {
+        server_capabilities = {
+          diagnosticProvider = { identifier = 'provider-' .. client_id },
+        },
+      }
+    end
+    vim.lsp.diagnostic.get_namespace = function(client_id, pull_id)
+      table.insert(namespace_calls, {
+        client_id = client_id,
+        pull_id = pull_id,
+        pull_id_type = type(pull_id),
+      })
       return 0
     end
     vim.diagnostic.get = function()
@@ -713,6 +959,9 @@ describe('cosmic-ui.codeactions.request', function()
             completed_clients = state.completed_clients,
             response_count = vim.tbl_count(state.responses),
           })
+          if state.status == 'ready' then
+            final_state = state
+          end
         end,
       })
 
@@ -721,6 +970,7 @@ describe('cosmic-ui.codeactions.request', function()
     end)
 
     vim.lsp.diagnostic.get_namespace = original_get_namespace
+    vim.lsp.get_client_by_id = original_get_client_by_id
     vim.diagnostic.get = original_diagnostic_get
     vim.lsp.util.make_range_params = original_make_range_params
 
@@ -739,6 +989,14 @@ describe('cosmic-ui.codeactions.request', function()
         response_count = 2,
       },
     }, seen)
+    assert.are.equal(source_buf, final_state.responses[1].bufnr)
+    assert.are.equal(source_buf, final_state.responses[2].bufnr)
+    assert.are.same({
+      { client_id = 1, pull_id_type = 'nil' },
+      { client_id = 1, pull_id = 'provider-1', pull_id_type = 'string' },
+      { client_id = 2, pull_id_type = 'nil' },
+      { client_id = 2, pull_id = 'provider-2', pull_id_type = 'string' },
+    }, namespace_calls)
   end)
 
   it('completes collection when a client request fails to start', function()

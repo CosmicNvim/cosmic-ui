@@ -1,12 +1,7 @@
 local panel = require('cosmic-ui.ui.panel')
+local window = require('cosmic-ui.window')
 
 local M = {}
-
-local function clamp_ui_size(width, height)
-  local max_width = math.max(36, math.floor(vim.o.columns * 0.9))
-  local max_height = math.max(8, math.floor((vim.o.lines - vim.o.cmdheight) * 0.7))
-  return math.min(width, max_width), math.min(height, max_height)
-end
 
 local function selection_indicator(ui)
   if #ui.model.actions == 0 then
@@ -68,7 +63,18 @@ M.render = function(ui)
 
   local prepared = panel.prepare_standard(ui.panel, {
     min_width = ui.min_width or 30,
-    clamp_size = clamp_ui_size,
+    clamp_size = function(width, height)
+      local border = ui.border and ui.border.style
+      if border == nil then
+        border = vim.o.winborder
+      end
+
+      return window.fit_float_size(width, height, {
+        width_ratio = 0.9,
+        height_ratio = 0.7,
+        border = border,
+      })
+    end,
   })
   local width = prepared.width
   local height = prepared.height

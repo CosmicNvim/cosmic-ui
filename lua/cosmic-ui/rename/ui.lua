@@ -79,9 +79,11 @@ local function render(ui, value)
   end
 
   if ui.win and vim.api.nvim_win_is_valid(ui.win) then
+    local height
+    width, height = window.fit_float_size(width, ui.fixed_height or #lines, { border = ui.border })
     local cfg = vim.api.nvim_win_get_config(ui.win)
     cfg.width = width
-    cfg.height = ui.fixed_height or #lines
+    cfg.height = height
     vim.api.nvim_win_set_config(ui.win, cfg)
   end
 
@@ -146,8 +148,10 @@ local function backspace(ui)
     return
   end
 
-  vim.api.nvim_buf_set_text(ui.buf, ui.prompt_row - 1, col - 1, ui.prompt_row - 1, col, { '' })
-  set_cursor_col(ui, col - 1)
+  local line = vim.api.nvim_buf_get_lines(ui.buf, ui.prompt_row - 1, ui.prompt_row, true)[1] or ''
+  local start_col = col + vim.str_utf_start(line, col) - 1
+  vim.api.nvim_buf_set_text(ui.buf, ui.prompt_row - 1, start_col, ui.prompt_row - 1, col, { '' })
+  set_cursor_col(ui, start_col)
 end
 
 local function stop_insert_mode_if_needed()
@@ -218,12 +222,17 @@ M.open = function(opts)
   vim.bo[buf].swapfile = false
 
   local border = merged_window_opts.border or {}
+  local initial_width, initial_height = window.fit_float_size(
+    math.max(1, merged_window_opts.width or 30),
+    math.max(1, merged_window_opts.height or 5),
+    { border = border.style }
+  )
   local win = window.open_float(buf, {
     relative = merged_window_opts.relative,
     row = merged_window_opts.row,
     col = merged_window_opts.col,
-    width = math.max(1, merged_window_opts.width or 30),
-    height = math.max(1, merged_window_opts.height or 5),
+    width = initial_width,
+    height = initial_height,
     zindex = merged_window_opts.zindex,
     border = border.style,
     title = border.title,
@@ -260,6 +269,7 @@ M.open = function(opts)
     origin_cursor = target_cursor,
     fixed_width = opts.window and opts.window.width or nil,
     fixed_height = opts.window and opts.window.height or nil,
+    border = border.style,
     closed = false,
     submitted = false,
   }

@@ -78,4 +78,25 @@ describe('cosmic-ui.codeactions.ui.model', function()
       text = '1 source failed to return code actions',
     }, built.rows[1])
   end)
+
+  it('marks disabled actions and preserves their source buffer', function()
+    local model = require('cosmic-ui.codeactions.ui.model')
+    local built = model.build({
+      [1] = {
+        bufnr = 42,
+        client = { id = 1, name = 'lua_ls' },
+        result = {
+          {
+            title = 'Extract function',
+            disabled = { reason = 'Selection is not extractable' },
+          },
+        },
+      },
+    })
+
+    assert.are.equal(1, #built.actions)
+    assert.are.equal('Extract function (disabled)', built.actions[1].text)
+    assert.are.equal(42, built.actions[1].bufnr)
+    assert.are.same({ reason = 'Selection is not extractable' }, built.actions[1].disabled)
+  end)
 end)

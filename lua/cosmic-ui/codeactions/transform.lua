@@ -22,25 +22,24 @@ M.transform_action = function(action)
   return action
 end
 
-M.execute_action = function(action, client)
-  if action.edit or type(action.command) == 'table' then
-    if action.edit then
-      vim.lsp.util.apply_workspace_edit(action.edit, client.offset_encoding)
-    end
-    if type(action.command) == 'table' then
-      client:exec_cmd(action.command)
-    end
-  else
-    client:exec_cmd(action)
+M.execute_action = function(action, client, context)
+  if action.edit then
+    vim.lsp.util.apply_workspace_edit(action.edit, client.offset_encoding)
+  end
+
+  if type(action.command) == 'table' then
+    client:exec_cmd(action.command, context)
+  elseif type(action.command) == 'string' and not action.edit then
+    client:exec_cmd(action, context)
   end
 end
 
-M.supports_code_action_resolve = function(client)
+M.supports_code_action_resolve = function(client, bufnr)
   if not client then
     return false
   end
 
-  if type(client.supports_method) == 'function' and client:supports_method('codeAction/resolve') then
+  if type(client.supports_method) == 'function' and client:supports_method('codeAction/resolve', bufnr) then
     return true
   end
 

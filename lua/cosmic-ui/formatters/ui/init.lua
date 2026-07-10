@@ -42,16 +42,21 @@ M.open = function(opts, handlers)
   end
 
   local border = vim.o.winborder ~= '' and vim.o.winborder or nil
+  local initial = window.centered_float_config(64, 14, {
+    width_ratio = 0.9,
+    height_ratio = 0.8,
+    border = border,
+  })
   local win = window.open_float(buf, {
     relative = 'editor',
     style = 'minimal',
     border = border,
     title = 'Toggle Formatters',
     title_pos = 'center',
-    row = 2,
-    col = 4,
-    width = 64,
-    height = 14,
+    row = initial.row,
+    col = initial.col,
+    width = initial.width,
+    height = initial.height,
   })
   if not win then
     return

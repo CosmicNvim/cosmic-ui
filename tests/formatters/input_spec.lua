@@ -70,4 +70,55 @@ describe('cosmic-ui.formatters.ui.input', function()
     assert.are.equal(1, render_calls)
     assert.are.equal(1, toggle_calls)
   end)
+
+  it('closes the panel before formatting its target buffer', function()
+    local input = require('cosmic-ui.formatters.ui.input')
+    local original_buf = vim.api.nvim_get_current_buf()
+    local panel_buf = vim.api.nvim_create_buf(false, true)
+    local target_buf = vim.api.nvim_create_buf(false, true)
+    local calls = {}
+    local ui = {
+      buf = panel_buf,
+      selected = 1,
+      scope = 'buffer',
+      target_bufnr = target_buf,
+      rows = {},
+    }
+
+    vim.api.nvim_set_current_buf(panel_buf)
+    input.set_keymaps(ui, {
+      reset_fn = function() end,
+      format_async_fn = function(opts)
+        table.insert(calls, {
+          kind = 'format',
+          opts = opts,
+          current_buf = vim.api.nvim_get_current_buf(),
+        })
+      end,
+    }, {
+      close_fn = function()
+        table.insert(calls, { kind = 'close' })
+        vim.api.nvim_set_current_buf(target_buf)
+      end,
+      update_selection_fn = function() end,
+      render_fn = function() end,
+      state = {},
+    })
+
+    vim.api.nvim_feedkeys('f', 'xt', false)
+    vim.cmd('redraw')
+
+    vim.api.nvim_set_current_buf(original_buf)
+    vim.api.nvim_buf_delete(panel_buf, { force = true })
+    vim.api.nvim_buf_delete(target_buf, { force = true })
+
+    assert.are.same({
+      { kind = 'close' },
+      {
+        kind = 'format',
+        opts = { scope = 'buffer', bufnr = target_buf },
+        current_buf = target_buf,
+      },
+    }, calls)
+  end)
 end)
