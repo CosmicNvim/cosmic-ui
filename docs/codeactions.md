@@ -39,10 +39,15 @@ Optional request options passed to the code action core module.
 
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `params` | `table\|nil` | No | `nil` | Explicit LSP request params. |
+| `params` | `table\|nil` | No | `nil` | Complete LSP `CodeActionParams` replacement. |
 | `range` | `table\|nil` | No | `nil` | Optional range `{ start, end }`. |
 | `range.start` | `{integer, integer}\|nil` | No | `nil` | Optional start position `{line, col}`. |
 | `range.end` | `{integer, integer}\|nil` | No | `nil` | Optional end position `{line, col}`. |
+
+`params` replaces automatic position construction, so it must include
+`textDocument` and `range`. Its optional `context` is preserved, and missing
+diagnostics are populated by cosmic-ui. Build cursor positions with the target
+client's offset encoding.
 
 ## Module
 
@@ -66,8 +71,16 @@ require("cosmic-ui").codeactions.open()
 ```
 
 ```lua
+local bufnr = vim.api.nvim_get_current_buf()
+local target_client = assert(vim.lsp.get_clients({
+  bufnr = bufnr,
+  method = "textDocument/codeAction",
+})[1])
+local params = vim.lsp.util.make_range_params(0, target_client.offset_encoding)
+params.context = { only = { "quickfix" } }
+
 require("cosmic-ui").codeactions.open({
-  params = { context = { only = { "quickfix" } } },
+  params = params,
 })
 ```
 

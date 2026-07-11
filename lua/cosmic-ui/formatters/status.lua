@@ -4,6 +4,34 @@ local conform_backend = require('cosmic-ui.formatters.backends.conform')
 
 local M = {}
 
+local function resolve_fallback_reason(context, client)
+  if not context.available then
+    return 'conform unavailable'
+  elseif not context.conform_enabled then
+    return 'conform backend disabled'
+  elseif not context.lsp_enabled then
+    return 'lsp backend disabled'
+  elseif context.mode == 'never' then
+    return 'mode never'
+  elseif not context.uses_lsp then
+    if context.mode == 'fallback' then
+      return 'formatters available'
+    elseif context.mode == 'last' then
+      return 'no conform formatters'
+    end
+    return 'mode inactive'
+  elseif client then
+    if not client.available then
+      return 'lsp client unavailable'
+    elseif not client.enabled then
+      return 'lsp client disabled'
+    end
+    return 'eligible'
+  end
+
+  return nil
+end
+
 M.get = function(opts)
   opts = opts or {}
 
@@ -32,7 +60,6 @@ M.get = function(opts)
   local display_global_mode = mode_sources.global_mode or 'never'
   local display_specific_mode = mode_sources.specific_mode
   local display_specific_filetype = mode_sources.specific_filetype
-  local fallback_reason = nil
   local fallback_available = conform_data.available
   local any_conform_formatters = false
 
@@ -45,58 +72,28 @@ M.get = function(opts)
 
   local uses_lsp = conform_backend.conform_mode_uses_lsp(fallback_mode, any_conform_formatters)
   local eligible_clients = 0
-
-  if not fallback_available then
-    fallback_reason = 'conform unavailable'
-  elseif not conform_enabled then
-    fallback_reason = 'conform backend disabled'
-  elseif not lsp_enabled then
-    fallback_reason = 'lsp backend disabled'
-  elseif fallback_mode == 'never' then
-    fallback_reason = 'mode never'
-  elseif not uses_lsp then
-    if fallback_mode == 'fallback' then
-      fallback_reason = 'formatters available'
-    elseif fallback_mode == 'last' then
-      fallback_reason = 'no conform formatters'
-    else
-      fallback_reason = 'mode inactive'
-    end
-  end
+  local fallback_context = {
+    available = fallback_available,
+    conform_enabled = conform_enabled,
+    lsp_enabled = lsp_enabled,
+    mode = fallback_mode,
+    uses_lsp = uses_lsp,
+  }
+  local fallback_reason = resolve_fallback_reason(fallback_context)
 
   for _, client in ipairs(lsp_clients) do
+    local reason = resolve_fallback_reason(fallback_context, client)
     local fallback = {
       eligible = false,
-      reason = 'eligible',
+      reason = reason,
       mode = configured_mode,
       effective_mode = fallback_mode,
       source = fallback_source,
       configured_source = configured_source,
     }
 
-    if not fallback_available then
-      fallback.reason = 'conform unavailable'
-    elseif not conform_enabled then
-      fallback.reason = 'conform backend disabled'
-    elseif not lsp_enabled then
-      fallback.reason = 'lsp backend disabled'
-    elseif fallback_mode == 'never' then
-      fallback.reason = 'mode never'
-    elseif not uses_lsp then
-      if fallback_mode == 'fallback' then
-        fallback.reason = 'formatters available'
-      elseif fallback_mode == 'last' then
-        fallback.reason = 'no conform formatters'
-      else
-        fallback.reason = 'mode inactive'
-      end
-    elseif not client.available then
-      fallback.reason = 'lsp client unavailable'
-    elseif not client.enabled then
-      fallback.reason = 'lsp client disabled'
-    else
+    if reason == 'eligible' then
       fallback.eligible = true
-      fallback.reason = 'eligible'
       eligible_clients = eligible_clients + 1
     end
 

@@ -5,8 +5,26 @@ on:
   pull_request:
 
 jobs:
-  check:
+  lint:
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check formatting
+        uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
+          args: --check lua plugin tests
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        neovim: [v0.11.0, v0.12.4]
 
     steps:
       - name: Check out repository
@@ -16,14 +34,7 @@ jobs:
         uses: rhysd/action-setup-vim@v1
         with:
           neovim: true
-          version: v0.12.4
-
-      - name: Check formatting
-        uses: JohnnyMorganz/stylua-action@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          version: latest
-          args: --check lua plugin tests
+          version: ${{ matrix.neovim }}
 
       - name: Install plenary.nvim
         run: git clone --depth 1 https://github.com/nvim-lua/plenary.nvim "$HOME/.local/share/nvim/site/pack/vendor/start/plenary.nvim"

@@ -74,14 +74,16 @@ Fetches and displays code actions for the current cursor context.
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | `opts` | `table\|nil` | No | `{}` | Optional code action request input. |
-| `opts.params` | `table\|nil` | No | `nil` | Full LSP request params table to use. |
+| `opts.params` | `table\|nil` | No | `nil` | Complete LSP `CodeActionParams` replacement. |
 | `opts.range` | `table\|nil` | No | `nil` | Range object used to build params when present. |
 | `opts.range.start` | `{integer, integer}\|nil` | No | `nil` | Start `{line, col}` pair. |
 | `opts.range.end` | `{integer, integer}\|nil` | No | `nil` | End `{line, col}` pair. |
 
 Behavior:
 - If `opts.range` is present, range params are built from it.
-- Else if `opts.params` is present, `opts.params` is used directly.
+- Else if `opts.params` is present, it replaces automatic position construction
+  and must include `textDocument` and `range`; optional `context` is preserved,
+  and missing diagnostics are populated automatically.
 - Else cursor-based range params are created automatically.
 - Uses a native floating menu UI.
 - Code action menu groups are ordered deterministically by client name (tie-break: client id).
@@ -96,12 +98,14 @@ Fetches and displays code actions for the active visual selection.
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | `opts` | `table\|nil` | No | `{}` | Optional code action request input. |
-| `opts.params` | `table\|nil` | No | `nil` | Optional explicit params override. |
+| `opts.params` | `table\|nil` | No | `nil` | Complete LSP `CodeActionParams` replacement. |
 | `opts.range` | `table\|nil` | No | `nil` | Optional range override. |
 
 Behavior:
 - Uses `opts.range` when provided.
-- Else uses `opts.params` when provided.
+- Else `opts.params` replaces automatic position construction and must include
+  `textDocument` and `range`; optional `context` is preserved, and missing
+  diagnostics are populated automatically.
 - Else builds `range` from `'<` and `'>` marks.
 
 ### Usage examples
@@ -121,8 +125,16 @@ Optional command: `:CosmicCodeActions`
 ### Optional advanced opts
 
 ```lua
+local bufnr = vim.api.nvim_get_current_buf()
+local target_client = assert(vim.lsp.get_clients({
+  bufnr = bufnr,
+  method = "textDocument/codeAction",
+})[1])
+local params = vim.lsp.util.make_range_params(0, target_client.offset_encoding)
+params.context = { only = { "quickfix" } }
+
 require("cosmic-ui").codeactions.open({
-  params = { context = { only = { "quickfix" } } },
+  params = params,
 })
 ```
 

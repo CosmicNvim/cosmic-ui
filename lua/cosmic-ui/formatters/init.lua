@@ -74,6 +74,17 @@ local function mutate_item(opts, mutator, action_name)
   )
 end
 
+local function run_lsp_format(bufnr, scope, async, lsp_opts)
+  return lsp_backend.run_lsp({
+    bufnr = bufnr,
+    scope = scope,
+    async = async,
+    lsp_opts = lsp_opts,
+    warn_once = warn_once,
+    merge_fn = utils.merge,
+  })
+end
+
 local function format_internal(opts, async)
   opts = opts or {}
   local scope = normalize.resolve_scope(opts.scope)
@@ -122,14 +133,7 @@ local function format_internal(opts, async)
     end
 
     if lsp_enabled then
-      return lsp_backend.run_lsp({
-        bufnr = bufnr,
-        scope = scope,
-        async = async,
-        lsp_opts = lsp_opts,
-        warn_once = warn_once,
-        merge_fn = utils.merge,
-      })
+      return run_lsp_format(bufnr, scope, async, lsp_opts)
     end
 
     logger:warn('No enabled formatters available for this scope.')
@@ -146,14 +150,7 @@ local function format_internal(opts, async)
   end
 
   if lsp_enabled then
-    return lsp_backend.run_lsp({
-      bufnr = bufnr,
-      scope = scope,
-      async = async,
-      lsp_opts = lsp_opts,
-      warn_once = warn_once,
-      merge_fn = utils.merge,
-    })
+    return run_lsp_format(bufnr, scope, async, lsp_opts)
   end
 
   logger:warn('No enabled formatters available for this scope.')

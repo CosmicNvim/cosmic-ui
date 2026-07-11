@@ -611,6 +611,48 @@ describe('cosmic-ui.formatters api', function()
     assert.is_not_nil(snapshot.conform.fallback)
   end)
 
+  it('reports mixed per-client Conform fallback eligibility reasons', function()
+    local formatters = setup_formatters()
+    local bufnr = new_buffer('lua')
+    local eligible = lsp_client(1, 'eligible', true)
+    local unavailable = lsp_client(2, 'unavailable', false)
+    local disabled = lsp_client(3, 'disabled', true)
+
+    vim.lsp.get_clients = function(opts)
+      assert.are.equal(bufnr, opts.bufnr)
+      return { unavailable, eligible, disabled }
+    end
+
+    stub_conform({}, nil, {
+      default_format_opts = {
+        lsp_format = 'fallback',
+      },
+    })
+    formatters.disable_item({ source = 'lsp', name = 'disabled', bufnr = bufnr })
+
+    local snapshot = formatters.status({ bufnr = bufnr })
+    local fallback_by_name = {}
+    for _, client in ipairs(snapshot.lsp_clients) do
+      fallback_by_name[client.name] = client.conform_fallback
+    end
+
+    assert.are.equal(1, snapshot.conform.fallback.eligible_clients)
+    assert.are.equal(3, snapshot.conform.fallback.total_clients)
+    assert.is_nil(snapshot.conform.fallback.reason)
+    assert.are.same({
+      eligible = true,
+      reason = 'eligible',
+      mode = 'fallback',
+      effective_mode = 'fallback',
+      source = 'global',
+      configured_source = 'global',
+    }, fallback_by_name.eligible)
+    assert.are.equal('lsp client unavailable', fallback_by_name.unavailable.reason)
+    assert.is_false(fallback_by_name.unavailable.eligible)
+    assert.are.equal('lsp client disabled', fallback_by_name.disabled.reason)
+    assert.is_false(fallback_by_name.disabled.eligible)
+  end)
+
   it('reflects requested Conform LSP mode in status fallback metadata', function()
     local formatters = setup_formatters()
     local bufnr = new_buffer('lua')

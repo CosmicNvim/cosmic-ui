@@ -210,10 +210,7 @@ describe('cosmic-ui.formatters.ui.rows', function()
     local has_subtitle_hl = false
 
     assert.are.equal(' LSP  fallback', rstrip(lines[ui.rows[1].lnum]))
-    assert.are.equal(
-      ' Tab:toggle+next  s:scope  r:reset  a:toggle all  f:format  q:close',
-      rstrip(lines[ui.footer_lnum])
-    )
+    assert.are.equal(' Tab:toggle  s:scope  r:reset  a:toggle all  f:format  q:close', rstrip(lines[ui.footer_lnum]))
     assert.are.same({
       highlight = 'CosmicUiPanelHintKey',
       start_col = 1,
@@ -222,7 +219,7 @@ describe('cosmic-ui.formatters.ui.rows', function()
     assert.are.same({
       highlight = 'CosmicUiPanelHintText',
       start_col = 5,
-      end_col = 16,
+      end_col = 11,
     }, ui.footer_spans[2])
 
     for _, mark in ipairs(extmarks) do

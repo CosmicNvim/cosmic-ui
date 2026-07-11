@@ -50,7 +50,7 @@ local function validate_open_opts(opts)
   end
 end
 
-local function default_submitter(curr_name, target_ctx)
+local function default_submitter(target_ctx)
   return function(new_name)
     if not (target_ctx.winid and vim.api.nvim_win_is_valid(target_ctx.winid)) then
       return
@@ -186,7 +186,7 @@ M.open = function(opts)
   local prompt = opts.prompt or user_opts.prompt or '> '
   local default_value = opts.default_value or curr_name
   local on_submit = opts.on_submit
-    or default_submitter(curr_name, {
+    or default_submitter({
       bufnr = target_bufnr,
       winid = target_winid,
       cursor = target_cursor,

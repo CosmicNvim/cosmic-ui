@@ -2,7 +2,7 @@ local M = {}
 
 M.footer_entries = function()
   return {
-    'Tab:toggle+next',
+    'Tab:toggle',
     's:scope',
     'r:reset',
     'a:toggle all',
@@ -64,16 +64,12 @@ local function toggle_row(ui, handlers, deps)
     return
   end
 
-  local next_idx = next_toggleable_index(ui.rows, ui.selected, 1)
   local row = ui.rows and ui.rows[ui.selected]
   if not row or not row.toggleable then
     return
   end
 
   toggle_action(row.action, ui, deps.state)
-  if next_idx then
-    ui.selected = next_idx
-  end
   deps.render_fn(ui, handlers)
 end
 
