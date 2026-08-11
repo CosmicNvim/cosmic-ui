@@ -55,6 +55,61 @@ M.centered_float_config = function(width, height, opts)
   }
 end
 
+M.cursor_placement = function()
+  local win_row, win_col = 0, 0
+  local ok_pos, pos = pcall(vim.api.nvim_win_get_position, 0)
+  if ok_pos and type(pos) == 'table' then
+    win_row = pos[1] or 0
+    win_col = pos[2] or 0
+  end
+
+  local ok_line, cursor_line = pcall(vim.fn.winline)
+  local ok_col, cursor_col = pcall(vim.fn.wincol)
+  if not (ok_line and type(cursor_line) == 'number' and cursor_line >= 1) then
+    cursor_line = 1
+  end
+  if not (ok_col and type(cursor_col) == 'number' and cursor_col >= 1) then
+    cursor_col = 1
+  end
+
+  local screen_row = win_row + cursor_line
+  local screen_col = win_col + cursor_col
+  local usable_height = math.max(1, vim.o.lines - vim.o.cmdheight)
+
+  return {
+    row = screen_row - 1,
+    col = screen_col - 1,
+    above = math.max(0, screen_row - 1),
+    below = math.max(0, usable_height - screen_row),
+  }
+end
+
+M.cursor_float_config = function(placement, width, height, opts)
+  opts = opts or {}
+  local border = border_extent(opts.border)
+  local flip = height + border > placement.below and placement.above > placement.below
+  local side_height = math.max(1, (flip and placement.above or placement.below) - border)
+  height = math.max(1, math.min(height, side_height))
+  local col = math.max(0, math.min(placement.col, vim.o.columns - width - border))
+
+  local config = {
+    relative = 'editor',
+    width = width,
+    height = height,
+    col = col,
+  }
+
+  if flip then
+    config.anchor = 'SW'
+    config.row = placement.row
+  else
+    config.anchor = 'NW'
+    config.row = placement.row + 1
+  end
+
+  return config
+end
+
 M.resolve_border = function(style)
   if style == nil then
     style = vim.o.winborder

@@ -210,16 +210,16 @@ describe('cosmic-ui.formatters.ui.rows', function()
     local has_subtitle_hl = false
 
     assert.are.equal(' LSP  fallback', rstrip(lines[ui.rows[1].lnum]))
-    assert.are.equal(' Tab:toggle  s:scope  r:reset  a:toggle all  f:format  q:close', rstrip(lines[ui.footer_lnum]))
+    assert.are.equal(' Enter:toggle  s:scope  r:reset  a:toggle all  f:format  q:close', rstrip(lines[ui.footer_lnum]))
     assert.are.same({
       highlight = 'CosmicUiPanelHintKey',
       start_col = 1,
-      end_col = 4,
+      end_col = 6,
     }, ui.footer_spans[1])
     assert.are.same({
       highlight = 'CosmicUiPanelHintText',
-      start_col = 5,
-      end_col = 11,
+      start_col = 7,
+      end_col = 13,
     }, ui.footer_spans[2])
 
     for _, mark in ipairs(extmarks) do
@@ -388,7 +388,7 @@ describe('cosmic-ui.formatters.ui.rows', function()
     assert.are.same({ ui.rows[2].lnum, 0 }, cursor_after)
   end)
 
-  it('keeps selectable rows within height-truncated formatter output', function()
+  it('keeps every formatter row selectable when content exceeds the panel height', function()
     local constants = require('cosmic-ui.formatters.constants')
     local render = require('cosmic-ui.formatters.ui.render')
 
@@ -472,15 +472,17 @@ describe('cosmic-ui.formatters.ui.rows', function()
       border = border,
     })
 
+    local cursor_after = vim.api.nvim_win_get_cursor(ui.win)
+
     vim.api.nvim_set_current_buf(original_buf)
     vim.api.nvim_buf_delete(buf, { force = true })
 
-    assert.are.equal(max_height, #ui.rendered_lines)
-    assert.are.equal('...', rstrip(ui.rendered_lines[#ui.rendered_lines]))
-    assert.is_true(#ui.rows < #all_rows)
-    assert.are.equal(1, ui.selected)
-    for _, row in ipairs(ui.rows) do
-      assert.is_true(row.lnum < max_height)
+    assert.is_true(#ui.rendered_lines > max_height)
+    assert.are.equal(#all_rows, #ui.rows)
+    assert.are.equal(30, ui.selected)
+    for _, line in ipairs(ui.rendered_lines) do
+      assert.are_not.equal('...', rstrip(line))
     end
+    assert.are.same({ ui.rows[30].lnum, 0 }, cursor_after)
   end)
 end)

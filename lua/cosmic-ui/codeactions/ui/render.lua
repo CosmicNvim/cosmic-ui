@@ -78,11 +78,27 @@ M.render = function(ui)
   local highlights = prepared.highlights
 
   if ui.win and vim.api.nvim_win_is_valid(ui.win) then
-    local cfg = vim.api.nvim_win_get_config(ui.win)
-    cfg.width = width
-    cfg.height = height
-    cfg.title = ui.border and ui.border.title or nil
-    cfg.title_pos = ui.border and ui.border.title_align or nil
+    local cfg = {
+      width = width,
+      height = height,
+      title = ui.border and ui.border.title or nil,
+      title_pos = ui.border and ui.border.title_align or nil,
+    }
+
+    if ui.placement then
+      local border = ui.border and ui.border.style
+      if border == nil then
+        border = vim.o.winborder
+      end
+
+      local placed = window.cursor_float_config(ui.placement, width, height, { border = border })
+      cfg.relative = placed.relative
+      cfg.anchor = placed.anchor
+      cfg.row = placed.row
+      cfg.col = placed.col
+      cfg.height = placed.height
+    end
+
     vim.api.nvim_win_set_config(ui.win, cfg)
   end
 

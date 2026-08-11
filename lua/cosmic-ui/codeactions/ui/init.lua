@@ -20,9 +20,15 @@ local function dismiss_current()
 end
 
 local function build_panel_model(built)
+  local footer = { 'q:close' }
+  if #built.actions > 0 then
+    footer = { 'Enter:apply', 'q:close' }
+  end
+
   return panel.prepare({
     rows = built.rows,
     selected = (#built.actions > 0) and 1 or nil,
+    footer = footer,
   })
 end
 
@@ -120,6 +126,9 @@ M.open = function(results_lsp, user_opts)
       border = border_style,
     })
 
+  local placement = window.cursor_placement()
+  local placed = window.cursor_float_config(placement, initial_width, initial_height, { border = border_style })
+
   local buf = window.create_scratch_buf({
     filetype = 'cosmicui-codeactions',
     modifiable = false,
@@ -130,11 +139,12 @@ M.open = function(results_lsp, user_opts)
   end
 
   local win = window.open_float(buf, {
-    relative = 'cursor',
-    row = 1,
-    col = 0,
-    width = initial_width,
-    height = initial_height,
+    relative = placed.relative,
+    anchor = placed.anchor,
+    row = placed.row,
+    col = placed.col,
+    width = placed.width,
+    height = placed.height,
     border = border_style,
     title = border.title,
     title_pos = border.title_align,
@@ -152,6 +162,8 @@ M.open = function(results_lsp, user_opts)
     win = win,
     selected = (#built.actions > 0) and 1 or nil,
     border = border,
+    origin_win = origin_win,
+    placement = placement,
     ns = lifecycle.ensure_namespace(),
   }
   apply_model(ui, built, user_opts, request_state, origin_win)

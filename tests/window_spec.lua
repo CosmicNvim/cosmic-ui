@@ -38,4 +38,90 @@ describe('cosmic-ui.window', function()
 
     assert.is_true(ok, err)
   end)
+
+  it('places cursor floats below the cursor when there is room', function()
+    local window = require('cosmic-ui.window')
+
+    local config = window.cursor_float_config({
+      row = 4,
+      col = 10,
+      above = 4,
+      below = 18,
+    }, 30, 6, { border = 'single' })
+
+    assert.are.equal('editor', config.relative)
+    assert.are.equal('NW', config.anchor)
+    assert.are.equal(5, config.row)
+    assert.are.equal(10, config.col)
+    assert.are.equal(6, config.height)
+  end)
+
+  it('flips cursor floats above the cursor when space below is insufficient', function()
+    local window = require('cosmic-ui.window')
+
+    local config = window.cursor_float_config({
+      row = 18,
+      col = 10,
+      above = 18,
+      below = 4,
+    }, 30, 6, { border = 'single' })
+
+    assert.are.equal('editor', config.relative)
+    assert.are.equal('SW', config.anchor)
+    assert.are.equal(18, config.row)
+    assert.are.equal(10, config.col)
+    assert.are.equal(6, config.height)
+  end)
+
+  it('keeps cursor floats below when neither side fits but below is larger', function()
+    local window = require('cosmic-ui.window')
+
+    local config = window.cursor_float_config({
+      row = 4,
+      col = 0,
+      above = 4,
+      below = 10,
+    }, 30, 20, { border = 'single' })
+
+    assert.are.equal('NW', config.anchor)
+    assert.are.equal(5, config.row)
+    assert.are.equal(8, config.height)
+  end)
+
+  it('clamps flipped cursor floats to the space above the cursor', function()
+    local window = require('cosmic-ui.window')
+
+    local config = window.cursor_float_config({
+      row = 15,
+      col = 0,
+      above = 15,
+      below = 3,
+    }, 30, 20, { border = 'single' })
+
+    assert.are.equal('SW', config.anchor)
+    assert.are.equal(15, config.row)
+    assert.are.equal(13, config.height)
+  end)
+
+  it('clamps cursor float columns to the editor width', function()
+    local window = require('cosmic-ui.window')
+    local original_columns = vim.o.columns
+
+    local ok, err = pcall(function()
+      vim.o.columns = 40
+
+      local config = window.cursor_float_config({
+        row = 2,
+        col = 35,
+        above = 2,
+        below = 15,
+      }, 20, 4, { border = 'single' })
+
+      assert.are.equal(18, config.col)
+    end)
+
+    vim.o.columns = original_columns
+
+    assert.is_true(ok, err)
+  end)
 end)

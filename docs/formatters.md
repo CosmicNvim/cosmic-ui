@@ -81,6 +81,19 @@ All methods below:
 Opens the formatter toggle UI.
 Opts: `OpenOpts`.
 
+Panel keymaps:
+
+- `j`/`k`, `<Down>`/`<Up>`, `<Tab>`/`<S-Tab>`: move the selection
+- `<CR>`/`<Space>`: toggle the selected formatter
+- `a`: toggle all formatters
+- `s`: switch scope (`buffer`/`global`)
+- `r`: reset overrides for the current scope
+- `f`: close the panel and format the target buffer
+- `q`/`<Esc>`: close the panel
+
+When the formatter list is taller than the panel, the selection scrolls the
+panel; every row stays reachable.
+
 ### `require("cosmic-ui").formatters.toggle(opts?)`
 
 Toggles backend state (`lsp`/`conform`) for selected scope.

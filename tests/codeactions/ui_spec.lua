@@ -94,7 +94,7 @@ describe('cosmic-ui.codeactions.ui', function()
     assert.are.same({ '<Esc>' }, seen)
   end)
 
-  it('does not render in-buffer footer helper rows', function()
+  it('renders an in-buffer key-hint footer row', function()
     local ui = require('cosmic-ui.codeactions.ui')
 
     ui.open({
@@ -109,8 +109,78 @@ describe('cosmic-ui.codeactions.ui', function()
     local state = lifecycle.get_state()
     local lines = vim.api.nvim_buf_get_lines(state.ui.buf, 0, -1, false)
 
-    assert.is_false(vim.tbl_contains(lines, ' Esc:close '))
-    assert.is_false(vim.tbl_contains(lines, ' Enter:apply  Esc:close '))
+    assert.is_true(vim.tbl_contains(lines, ' Enter:apply  q:close '))
+  end)
+
+  it('shows only the close hint when no actions are available', function()
+    local ui = require('cosmic-ui.codeactions.ui')
+
+    ui.open({
+      [1] = {
+        client = { id = 1, name = 'lua_ls' },
+        result = {},
+      },
+    }, {})
+
+    local state = lifecycle.get_state()
+    local lines = vim.api.nvim_buf_get_lines(state.ui.buf, 0, -1, false)
+
+    assert.is_true(vim.tbl_contains(lines, ' q:close '))
+    assert.is_false(vim.tbl_contains(lines, ' Enter:apply  q:close '))
+  end)
+
+  it('dismisses the panel with q', function()
+    local ui = require('cosmic-ui.codeactions.ui')
+
+    ui.open({
+      [1] = {
+        client = { id = 1, name = 'lua_ls' },
+        result = {
+          { title = 'Fix' },
+        },
+      },
+    }, {})
+
+    local state = lifecycle.get_state()
+    assert.is_not_nil(state.ui)
+
+    vim.api.nvim_feedkeys('q', 'xt', false)
+    vim.cmd('redraw')
+
+    assert.is_nil(lifecycle.get_state().ui)
+  end)
+
+  it('flips the panel above the cursor near the bottom of the screen', function()
+    local ui = require('cosmic-ui.codeactions.ui')
+    local original_buf = vim.api.nvim_get_current_buf()
+    local buf = vim.api.nvim_create_buf(false, true)
+    local fill = {}
+    for idx = 1, vim.o.lines * 2 do
+      fill[idx] = 'line ' .. idx
+    end
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, fill)
+    vim.api.nvim_set_current_buf(buf)
+    vim.cmd('normal! G')
+    vim.cmd('redraw')
+
+    ui.open({
+      [1] = {
+        client = { id = 1, name = 'lua_ls' },
+        result = {
+          { title = 'Fix' },
+        },
+      },
+    }, {})
+
+    local state = lifecycle.get_state()
+    local cfg = vim.api.nvim_win_get_config(state.ui.win)
+
+    lifecycle.close_current()
+    vim.api.nvim_set_current_buf(original_buf)
+    vim.api.nvim_buf_delete(buf, { force = true })
+
+    assert.are.equal('editor', cfg.relative)
+    assert.are.equal('SW', cfg.anchor)
   end)
 
   it('preserves configured min width and border metadata on the float', function()

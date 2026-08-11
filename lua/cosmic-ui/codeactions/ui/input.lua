@@ -73,6 +73,7 @@ M.set_keymaps = function(ui, handlers, deps)
 
   map('n', '<Esc>', dismiss)
   map('n', '<C-c>', dismiss)
+  map('n', 'q', dismiss)
 end
 
 return M
