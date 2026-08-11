@@ -1,4 +1,5 @@
 local panel = require('cosmic-ui.ui.panel')
+local ui_constants = require('cosmic-ui.ui.constants')
 local window = require('cosmic-ui.window')
 
 local M = {}
@@ -14,12 +15,10 @@ end
 local function apply_selection(ui)
   local indicator = selection_indicator(ui)
 
-  if ui.win and vim.api.nvim_win_is_valid(ui.win) then
-    vim.api.nvim_win_set_config(ui.win, {
-      footer = indicator,
-      footer_pos = indicator and 'right' or nil,
-    })
-  end
+  window.set_float_config(ui.win, {
+    footer = indicator,
+    footer_pos = indicator and 'right' or nil,
+  })
 
   if
     ui.selected
@@ -62,12 +61,9 @@ M.render = function(ui)
   M.ensure_selection(ui)
 
   local prepared = panel.prepare_standard(ui.panel, {
-    min_width = ui.min_width or 30,
+    min_width = ui.min_width or ui_constants.min_width,
     clamp_size = function(width, height)
-      local border = ui.border and ui.border.style
-      if border == nil then
-        border = vim.o.winborder
-      end
+      local border = window.resolve_border(ui.border and ui.border.style)
 
       return window.fit_float_size(width, height, {
         width_ratio = 0.9,

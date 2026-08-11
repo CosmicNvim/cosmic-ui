@@ -250,7 +250,6 @@ M.run_lsp = function(opts)
   local scope = opts.scope
   local async = opts.async
   local lsp_opts = opts.lsp_opts or {}
-  local warn_once = opts.warn_once
 
   local method, resolved_range = formatting_method_and_range(bufnr, lsp_opts.range)
   local attached_clients = get_lsp_clients(bufnr)
@@ -266,8 +265,8 @@ M.run_lsp = function(opts)
   if next(enabled_ids) == nil then
     if #attached_clients == 0 then
       logger:warn('LSP formatting unavailable (no clients attached).')
-    elseif warn_once then
-      warn_once('LSP formatting unavailable (all attached clients disabled or unsupported).')
+    else
+      logger:warn_once('LSP formatting unavailable (all attached clients disabled or unsupported).')
     end
     return false
   end
@@ -276,10 +275,7 @@ M.run_lsp = function(opts)
   local user_opts = vim.deepcopy(lsp_opts)
   user_opts.filter = nil
 
-  local merged = opts.merge_fn or function(left, right)
-    return vim.tbl_deep_extend('force', left, right)
-  end
-  local format_opts = merged({}, user_opts)
+  local format_opts = utils.merge({}, user_opts)
   format_opts.bufnr = bufnr
   format_opts.async = async
   format_opts.range = resolved_range

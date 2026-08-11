@@ -23,25 +23,17 @@ M.get_relative_path = function(file_path)
   return absolute_path
 end
 
-M.index_of = function(tbl, item)
-  for i, val in ipairs(tbl) do
-    if val == item then
-      return i
-    end
-  end
-end
-
 M.Logger = {}
-M.Logger.__index = M.Logger
 
-local function log(type, msg, opts)
+local function log(type, msg, opts, notify)
   local global_opts = config.get() or {}
   local title = global_opts.notify_title or 'CosmicUI'
   if vim.islist(msg) then
     msg = table.concat(msg, '\n')
   end
 
-  vim.notify(msg, type, {
+  notify = notify or vim.notify
+  notify(msg, type, {
     title = opts.title or title,
   })
 end
@@ -52,6 +44,10 @@ end
 
 function M.Logger:warn(msg, opts)
   log(vim.log.levels.WARN, msg, opts or {})
+end
+
+function M.Logger:warn_once(msg, opts)
+  log(vim.log.levels.WARN, msg, opts or {}, vim.notify_once)
 end
 
 function M.Logger:error(msg, opts)

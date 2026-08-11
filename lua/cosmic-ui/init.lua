@@ -6,9 +6,7 @@ local module_map = {
   formatters = 'cosmic-ui.formatters',
 }
 
-local M = {
-  _modules = {},
-}
+local M = {}
 
 M.setup = function(user_opts)
   config.setup(user_opts)
@@ -19,20 +17,13 @@ M.is_setup = function()
 end
 
 setmetatable(M, {
-  __index = function(tbl, key)
+  __index = function(_, key)
     local module_path = module_map[key]
     if not module_path then
       return nil
     end
 
-    local cached = rawget(tbl._modules, key)
-    if cached then
-      return cached
-    end
-
-    local loaded = require(module_path)
-    tbl._modules[key] = loaded
-    return loaded
+    return require(module_path)
   end,
 })
 

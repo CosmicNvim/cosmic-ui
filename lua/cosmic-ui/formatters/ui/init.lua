@@ -20,7 +20,8 @@ M.open = function(opts, handlers)
     return
   end
 
-  highlights.ensure(lifecycle.get_state(), constants.highlight_links)
+  lifecycle.ensure_namespace()
+  highlights.ensure(constants.highlight_links)
 
   local scope = handlers.resolve_scope(opts.scope)
   if not scope then
@@ -41,10 +42,11 @@ M.open = function(opts, handlers)
     return
   end
 
-  local border = vim.o.winborder ~= '' and vim.o.winborder or nil
-  local initial = window.centered_float_config(64, 14, {
-    width_ratio = 0.9,
-    height_ratio = 0.8,
+  local size = constants.panel_size
+  local border = window.resolve_border()
+  local initial = window.centered_float_config(size.base_width, size.base_height, {
+    width_ratio = size.width_ratio,
+    height_ratio = size.height_ratio,
     border = border,
   })
   local win = window.open_float(buf, {
@@ -62,12 +64,7 @@ M.open = function(opts, handlers)
     return
   end
 
-  vim.wo[win].cursorline = true
-  vim.wo[win].cursorlineopt = 'line'
-  vim.wo[win].number = false
-  vim.wo[win].relativenumber = false
-  vim.wo[win].signcolumn = 'no'
-  vim.wo[win].wrap = false
+  window.apply_panel_window_options(win, { cursorline = true })
   vim.wo[win].winhl =
     'FloatTitle:CosmicUiFmtTitle,FloatBorder:CosmicUiFmtSection,CursorLine:CosmicUiFmtCursorLine,Cursor:CosmicUiFmtCursor'
 

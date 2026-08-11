@@ -1,4 +1,7 @@
 local states = require('cosmic-ui.ui.states')
+local ui_constants = require('cosmic-ui.ui.constants')
+
+local MIN_WIDTH = ui_constants.min_width
 
 local M = {}
 
@@ -34,14 +37,14 @@ end
 
 local function push_row(rows, row, min_width)
   table.insert(rows, row)
-  return math.max(min_width, vim.fn.strdisplaywidth(row.text or ''), 30)
+  return math.max(min_width, vim.fn.strdisplaywidth(row.text or ''), MIN_WIDTH)
 end
 
 M.build = function(results_lsp)
   local request_state = extract_request_state(results_lsp)
   local rows = {}
   local actions = {}
-  local min_width = 30
+  local min_width = MIN_WIDTH
   local error_count = 0
 
   if request_state.status == 'loading' then
@@ -101,7 +104,7 @@ M.build = function(results_lsp)
           disabled = result.disabled,
         }
 
-        min_width = math.max(min_width, vim.fn.strdisplaywidth(display_title), 30)
+        min_width = math.max(min_width, vim.fn.strdisplaywidth(display_title), MIN_WIDTH)
         table.insert(rows, action)
         table.insert(actions, action)
       end
@@ -116,17 +119,17 @@ M.build = function(results_lsp)
       rows = {
         { kind = 'state', state = 'error', text = error_text },
       }
-      min_width = math.max(min_width, vim.fn.strdisplaywidth(error_text), 30)
+      min_width = math.max(min_width, vim.fn.strdisplaywidth(error_text), MIN_WIDTH)
     else
       local empty_row = states.empty('No code actions available')
       rows = { empty_row }
-      min_width = math.max(min_width, vim.fn.strdisplaywidth(empty_row.text), 30)
+      min_width = math.max(min_width, vim.fn.strdisplaywidth(empty_row.text), MIN_WIDTH)
     end
   elseif has_partial_error then
     local warning_text =
       pluralize(error_count, 'source failed to return code actions', 'sources failed to return code actions')
     table.insert(rows, 1, { kind = 'state', state = 'warn', text = warning_text })
-    min_width = math.max(min_width, vim.fn.strdisplaywidth(warning_text), 30)
+    min_width = math.max(min_width, vim.fn.strdisplaywidth(warning_text), MIN_WIDTH)
   end
 
   return {

@@ -1,9 +1,5 @@
 local M = {}
 
-local function push_info_row(rows, row)
-  table.insert(rows, row)
-end
-
 M.get_devicons = function(logger)
   local ok, devicons = pcall(require, 'nvim-web-devicons')
   if not ok then
@@ -61,7 +57,7 @@ M.build_rows = function(status, icons, status_icons)
   })
 
   if not status.conform.available then
-    push_info_row(rows, {
+    table.insert(rows, {
       id = 'conform_unavailable',
       text = ('%s %s Conform unavailable%s'):format(
         status_icons.unavailable,
@@ -76,7 +72,7 @@ M.build_rows = function(status, icons, status_icons)
       reason = status.conform.reason,
     })
   elseif #status.conform.formatters == 0 then
-    push_info_row(rows, {
+    table.insert(rows, {
       id = 'conform_empty',
       text = ('%s %s Conform: no formatters available'):format(status_icons.unavailable, icons.conform),
       toggleable = false,
@@ -115,7 +111,7 @@ M.build_rows = function(status, icons, status_icons)
   })
 
   if #status.lsp_clients == 0 then
-    push_info_row(rows, {
+    table.insert(rows, {
       id = 'lsp_empty',
       text = ('%s %s LSP: no attached clients'):format(status_icons.unavailable, icons.lsp),
       toggleable = false,

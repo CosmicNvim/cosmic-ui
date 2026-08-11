@@ -33,18 +33,9 @@ local function status_hl_group(status)
   return 'CosmicUiFmtUnavailable'
 end
 
-M.ensure = function(state, highlight_links)
-  if not state.ns then
-    state.ns = vim.api.nvim_create_namespace('cosmic-ui-formatters')
-  end
-
+M.ensure = function(highlight_links)
   shared_highlights.ensure()
-
-  for name, link in pairs(highlight_links) do
-    if name ~= 'CosmicUiFmtCursorLine' then
-      vim.api.nvim_set_hl(0, name, { link = link, default = true })
-    end
-  end
+  shared_highlights.ensure(highlight_links)
 
   local function group_bg(name)
     local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = name, link = false })
@@ -69,8 +60,6 @@ M.ensure = function(state, highlight_links)
     bg = bg,
     nocombine = true,
   })
-
-  return state.ns
 end
 
 M.apply = function(bufnr, ns, ui, lines)

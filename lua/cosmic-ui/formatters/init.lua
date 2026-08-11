@@ -1,4 +1,3 @@
-local config = require('cosmic-ui.config')
 local guard = require('cosmic-ui.guard')
 local normalize = require('cosmic-ui.formatters.normalize')
 local state = require('cosmic-ui.formatters.state')
@@ -13,12 +12,6 @@ local M = {}
 
 local function can_run(method_name)
   return guard.can_run('formatters', method_name)
-end
-
-local function warn_once(msg)
-  local global_opts = config.get() or {}
-  local title = global_opts.notify_title or 'CosmicUI'
-  vim.notify_once(msg, vim.log.levels.WARN, { title = title })
 end
 
 local function notify_global_override(backends)
@@ -80,8 +73,6 @@ local function run_lsp_format(bufnr, scope, async, lsp_opts)
     scope = scope,
     async = async,
     lsp_opts = lsp_opts,
-    warn_once = warn_once,
-    merge_fn = utils.merge,
   })
 end
 
@@ -118,43 +109,26 @@ local function format_internal(opts, async)
   local lsp_opts = vim.deepcopy(opts.lsp or {})
 
   local conform = conform_backend.get_conform_module()
-  if conform then
-    if conform_enabled then
-      return conform_backend.run_conform({
-        conform = conform,
-        bufnr = bufnr,
-        scope = scope,
-        async = async,
-        conform_opts = conform_opts,
-        lsp_enabled = lsp_enabled,
-        warn_once = warn_once,
-        merge_fn = utils.merge,
-      })
-    end
-
-    if lsp_enabled then
-      return run_lsp_format(bufnr, scope, async, lsp_opts)
-    end
-
-    logger:warn('No enabled formatters available for this scope.')
-    return false
+  if conform_enabled and conform then
+    return conform_backend.run_conform({
+      conform = conform,
+      bufnr = bufnr,
+      scope = scope,
+      async = async,
+      conform_opts = conform_opts,
+      lsp_enabled = lsp_enabled,
+    })
   end
 
   if conform_enabled then
-    if lsp_enabled then
-      warn_once('Conform.nvim not available; using LSP formatting fallback.')
-    else
-      warn_once('Conform.nvim not available; skipping conform formatter.')
+    if not lsp_enabled then
+      logger:warn_once('Conform.nvim not available; skipping conform formatter.')
       return false
     end
+    logger:warn_once('Conform.nvim not available; using LSP formatting fallback.')
   end
 
-  if lsp_enabled then
-    return run_lsp_format(bufnr, scope, async, lsp_opts)
-  end
-
-  logger:warn('No enabled formatters available for this scope.')
-  return false
+  return run_lsp_format(bufnr, scope, async, lsp_opts)
 end
 
 M.open = function(opts)

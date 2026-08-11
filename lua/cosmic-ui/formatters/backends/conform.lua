@@ -283,7 +283,6 @@ M.run_conform = function(opts)
   local async = opts.async
   local conform_opts = opts.conform_opts
   local lsp_enabled = opts.lsp_enabled
-  local warn_once = opts.warn_once
 
   local names = select(1, M.get_conform_formatter_names(bufnr)) or {}
   local allowed = {}
@@ -319,17 +318,11 @@ M.run_conform = function(opts)
   user_opts.formatters = nil
   user_opts.filter = nil
   if #allowed == 0 and not can_use_lsp then
-    if warn_once then
-      warn_once('Conform formatting unavailable (all conform formatters disabled or not runnable).')
-    end
+    logger:warn_once('Conform formatting unavailable (all conform formatters disabled or not runnable).')
     return false
   end
 
-  local merged = opts.merge_fn or function(left, right)
-    return vim.tbl_deep_extend('force', left, right)
-  end
-
-  local format_opts = merged({
+  local format_opts = utils.merge({
     bufnr = bufnr,
     async = async,
     lsp_fallback = false,
