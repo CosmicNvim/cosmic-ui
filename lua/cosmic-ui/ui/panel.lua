@@ -1,3 +1,4 @@
+local constants = require('cosmic-ui.ui.constants')
 local highlights = require('cosmic-ui.ui.highlights')
 local window = require('cosmic-ui.window')
 
@@ -41,6 +42,8 @@ local function normalize_footer(entries)
 
   return footer
 end
+
+M.normalize_footer = normalize_footer
 
 function M.render_footer(entries)
   local text = ''
@@ -165,7 +168,7 @@ function M.prepare_standard(model, opts)
 
   local line_specs = {}
   local action_line_by_idx = {}
-  local raw_max_width = 30
+  local raw_max_width = constants.min_width
   local action_idx = 0
   local seen_section = false
 
@@ -217,7 +220,7 @@ function M.prepare_standard(model, opts)
     })
   end
 
-  local width = math.max(raw_max_width, (opts.min_width or 30) + 2)
+  local width = math.max(raw_max_width, (opts.min_width or constants.min_width) + 2)
   local height = math.max(#line_specs, 1)
 
   if opts.clamp_size then

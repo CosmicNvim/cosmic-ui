@@ -126,7 +126,7 @@ describe('cosmic-ui.formatters.ui.rows', function()
     local highlights = require('cosmic-ui.formatters.ui.highlights')
     local input = require('cosmic-ui.formatters.ui.input')
     local render = require('cosmic-ui.formatters.ui.render')
-    local ui_state = {}
+    local ui_state = { ns = vim.api.nvim_create_namespace('cosmic-ui-formatters-spec') }
 
     local buf = vim.api.nvim_create_buf(false, true)
     local ui = {
@@ -200,7 +200,7 @@ describe('cosmic-ui.formatters.ui.rows', function()
       },
     }
 
-    highlights.ensure(ui_state, constants.highlight_links)
+    highlights.ensure(constants.highlight_links)
     render.render(ui, handlers, deps)
 
     local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)

@@ -64,7 +64,7 @@ M.collect = function(opts)
   if pending == 0 then
     if on_complete then
       request_state.status = 'ready'
-      on_complete(request_state, user_opts)
+      on_complete(request_state)
     end
     return
   end
@@ -112,7 +112,7 @@ M.collect = function(opts)
 
     if on_complete then
       request_state.status = 'ready'
-      on_complete(request_state, user_opts)
+      on_complete(request_state)
     end
   end
 

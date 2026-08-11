@@ -6,8 +6,8 @@ function M.group_for_state(state)
   return constants.state_highlights[state] or constants.state_highlights.info
 end
 
-function M.ensure()
-  for name, link in pairs(constants.highlight_links) do
+function M.ensure(links)
+  for name, link in pairs(links or constants.highlight_links) do
     vim.api.nvim_set_hl(0, name, { link = link, default = true })
   end
 end

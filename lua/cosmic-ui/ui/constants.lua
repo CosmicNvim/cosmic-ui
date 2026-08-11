@@ -1,6 +1,6 @@
 return {
   padding = { x = 1, y = 0 },
-  hints = { submit = 'Enter', close = 'Esc' },
+  min_width = 30,
   state_highlights = {
     empty = 'CosmicUiPanelStateInfo',
     info = 'CosmicUiPanelStateInfo',

@@ -13,12 +13,7 @@ M.open = function(...)
     error('rename.open: invalid arguments')
   end
 
-  local opts = ...
-  if opts ~= nil and type(opts) ~= 'table' then
-    error('rename.open: invalid arguments')
-  end
-
-  return ui.open(opts)
+  return ui.open(...)
 end
 
 return M

@@ -2,10 +2,12 @@ local lsp = vim.lsp
 local utils = require('cosmic-ui.utils')
 local config = require('cosmic-ui.config')
 local window = require('cosmic-ui.window')
+local lifecycle = require('cosmic-ui.ui.lifecycle')
 local model = require('cosmic-ui.rename.model')
 
 local M = {}
 local prompt_ns = vim.api.nvim_create_namespace('cosmic-ui-rename-prompt')
+local PROMPT_ROW = 1
 
 local function assert_table(val)
   return val == nil or type(val) == 'table'
@@ -68,10 +70,8 @@ local function render(ui, value)
     return
   end
 
-  ui.value = value
   local prompt_line = ui.prompt .. value
   local lines = { prompt_line }
-  local prompt_row = 1
 
   local width = ui.fixed_width or 30
   if not ui.fixed_width then
@@ -95,24 +95,23 @@ local function render(ui, value)
   vim.api.nvim_buf_clear_namespace(ui.buf, prompt_ns, 0, -1)
 
   if #ui.prompt > 0 then
-    vim.api.nvim_buf_set_extmark(ui.buf, prompt_ns, prompt_row - 1, 0, {
-      end_row = prompt_row - 1,
+    vim.api.nvim_buf_set_extmark(ui.buf, prompt_ns, PROMPT_ROW - 1, 0, {
+      end_row = PROMPT_ROW - 1,
       end_col = #ui.prompt,
       hl_group = ui.prompt_hl,
       priority = 300,
     })
   end
 
-  ui.prompt_row = prompt_row
   ui.prompt_col = #ui.prompt
 
   if ui.win and vim.api.nvim_win_is_valid(ui.win) then
-    pcall(vim.api.nvim_win_set_cursor, ui.win, { prompt_row, #prompt_line })
+    pcall(vim.api.nvim_win_set_cursor, ui.win, { PROMPT_ROW, #prompt_line })
   end
 end
 
 local function set_cursor_col(ui, col)
-  return pcall(vim.api.nvim_win_set_cursor, ui.win, { ui.prompt_row, col })
+  return pcall(vim.api.nvim_win_set_cursor, ui.win, { PROMPT_ROW, col })
 end
 
 local function ensure_cursor_after_prompt(ui)
@@ -121,10 +120,10 @@ local function ensure_cursor_after_prompt(ui)
   end
 
   local cursor = vim.api.nvim_win_get_cursor(ui.win)
-  local prompt_line = vim.api.nvim_buf_get_lines(ui.buf, ui.prompt_row - 1, ui.prompt_row, true)[1] or ''
+  local prompt_line = vim.api.nvim_buf_get_lines(ui.buf, PROMPT_ROW - 1, PROMPT_ROW, true)[1] or ''
   local col = cursor[2]
 
-  if cursor[1] ~= ui.prompt_row then
+  if cursor[1] ~= PROMPT_ROW then
     set_cursor_col(ui, math.max(ui.prompt_col, math.min(col, #prompt_line)))
     return
   end
@@ -139,7 +138,7 @@ end
 local function backspace(ui)
   local cursor = vim.api.nvim_win_get_cursor(ui.win)
   local col = cursor[2]
-  if cursor[1] ~= ui.prompt_row then
+  if cursor[1] ~= PROMPT_ROW then
     ensure_cursor_after_prompt(ui)
     return
   end
@@ -148,9 +147,9 @@ local function backspace(ui)
     return
   end
 
-  local line = vim.api.nvim_buf_get_lines(ui.buf, ui.prompt_row - 1, ui.prompt_row, true)[1] or ''
+  local line = vim.api.nvim_buf_get_lines(ui.buf, PROMPT_ROW - 1, PROMPT_ROW, true)[1] or ''
   local start_col = col + vim.str_utf_start(line, col) - 1
-  vim.api.nvim_buf_set_text(ui.buf, ui.prompt_row - 1, start_col, ui.prompt_row - 1, col, { '' })
+  vim.api.nvim_buf_set_text(ui.buf, PROMPT_ROW - 1, start_col, PROMPT_ROW - 1, col, { '' })
   set_cursor_col(ui, start_col)
 end
 
@@ -200,7 +199,7 @@ M.open = function(opts)
     height = 5,
     zindex = 50,
     border = {
-      style = user_border.style or vim.o.winborder,
+      style = window.resolve_border(user_border.style),
       title = user_border.title,
       title_align = user_border.title_align,
       highlight = user_border.highlight,
@@ -243,28 +242,14 @@ M.open = function(opts)
     return
   end
 
-  vim.wo[win].number = false
-  vim.wo[win].relativenumber = false
-  vim.wo[win].signcolumn = 'no'
-  vim.wo[win].wrap = false
-
-  local winhl = {}
-  if border.highlight then
-    table.insert(winhl, 'FloatBorder:' .. border.highlight)
-  end
-  if border.title_hl then
-    table.insert(winhl, 'FloatTitle:' .. border.title_hl)
-  end
-  if #winhl > 0 then
-    vim.wo[win].winhl = table.concat(winhl, ',')
-  end
+  window.apply_panel_window_options(win)
+  window.apply_border_winhl(win, border)
 
   local ui = {
     buf = buf,
     win = win,
     prompt = prompt,
     prompt_hl = user_opts.prompt_hl or 'Comment',
-    value = default_value,
     origin_win = target_winid,
     origin_cursor = target_cursor,
     fixed_width = opts.window and opts.window.width or nil,
@@ -273,9 +258,6 @@ M.open = function(opts)
     closed = false,
     submitted = false,
   }
-
-  local augroup = vim.api.nvim_create_augroup('cosmic_ui_rename_' .. tostring(buf), { clear = true })
-  ui.augroup = augroup
 
   local function restore_origin_state()
     window.restore_focus(ui.origin_win)
@@ -299,7 +281,7 @@ M.open = function(opts)
     ui.closed = true
 
     stop_insert_mode_if_needed()
-    pcall(vim.api.nvim_del_augroup_by_id, augroup)
+    pcall(vim.api.nvim_del_augroup_by_id, ui.augroup)
     window.safe_close_win(win)
     window.safe_delete_buf(buf, { force = true })
     if opts.restore_origin_state then
@@ -318,11 +300,10 @@ M.open = function(opts)
   end
 
   local function submit()
-    local raw_line = vim.api.nvim_buf_get_lines(buf, ui.prompt_row - 1, ui.prompt_row, true)[1] or ''
+    local raw_line = vim.api.nvim_buf_get_lines(buf, PROMPT_ROW - 1, PROMPT_ROW, true)[1] or ''
     local result = model.normalize_submission(prompt, raw_line, curr_name)
 
     if not result.ok then
-      ui.value = model.extract_value(prompt, raw_line)
       return
     end
 
@@ -336,20 +317,10 @@ M.open = function(opts)
     end)
   end
 
-  vim.api.nvim_create_autocmd({ 'BufLeave', 'WinLeave' }, {
-    group = augroup,
-    buffer = buf,
-    callback = dismiss,
-  })
-
-  vim.api.nvim_create_autocmd('WinClosed', {
-    group = augroup,
-    pattern = tostring(win),
-    callback = dismiss,
-  })
+  lifecycle.attach_close_autocmds(ui, dismiss, 'cosmic_ui_rename_')
 
   vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
-    group = augroup,
+    group = ui.augroup,
     buffer = buf,
     callback = function()
       ensure_cursor_after_prompt(ui)
@@ -369,7 +340,7 @@ M.open = function(opts)
 
   render(ui, default_value)
   vim.api.nvim_set_current_win(win)
-  vim.api.nvim_win_set_cursor(win, { ui.prompt_row, #prompt + #default_value })
+  vim.api.nvim_win_set_cursor(win, { PROMPT_ROW, #prompt + #default_value })
   vim.cmd('startinsert!')
 end
 

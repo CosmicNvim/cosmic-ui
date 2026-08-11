@@ -1,5 +1,6 @@
 local utils = require('cosmic-ui.utils')
 local panel = require('cosmic-ui.ui.panel')
+local ui_constants = require('cosmic-ui.ui.constants')
 local window = require('cosmic-ui.window')
 local transform = require('cosmic-ui.codeactions.transform')
 local lifecycle = require('cosmic-ui.codeactions.ui.lifecycle')
@@ -23,6 +24,17 @@ local function build_panel_model(built)
     rows = built.rows,
     selected = (#built.actions > 0) and 1 or nil,
   })
+end
+
+local function apply_model(ui, built, user_opts, request_state, origin_win)
+  local min_width = ui_constants.min_width
+  ui.model = built
+  ui.panel = build_panel_model(built)
+  ui.min_width = math.max(ui.min_width or min_width, user_opts.min_width or min_width, built.min_width or min_width)
+  ui.user_opts = user_opts
+  ui.request_state = request_state
+  ui.border = user_opts.border or ui.border or {}
+  ui.origin_win = origin_win
 end
 
 local function submit_action(action)
@@ -92,28 +104,17 @@ M.open = function(results_lsp, user_opts)
   local existing = lifecycle.get_state().ui
 
   if existing and vim.api.nvim_buf_is_valid(existing.buf) and vim.api.nvim_win_is_valid(existing.win) then
-    existing.model = built
-    existing.panel = build_panel_model(built)
-    existing.min_width = math.max(existing.min_width or 30, user_opts.min_width or 30, built.min_width or 30)
-    existing.user_opts = user_opts
-    existing.request_state = request_state
-    existing.border = user_opts.border or existing.border
-    existing.origin_win = origin_win
-    if existing.selected and existing.selected > #built.actions then
-      existing.selected = nil
-    end
+    apply_model(existing, built, user_opts, request_state, origin_win)
     render.render(existing)
     return
   end
 
   local border = user_opts.border or {}
-  local border_style = border.style or vim.o.winborder
-  if border_style == '' then
-    border_style = nil
-  end
+  local border_style = window.resolve_border(border.style)
+  local min_width = ui_constants.min_width
 
   local initial_width, initial_height =
-    window.fit_float_size(math.max((user_opts.min_width or built.min_width or 30) + 2, 32), 1, {
+    window.fit_float_size(math.max((user_opts.min_width or built.min_width or min_width) + 2, min_width + 2), 1, {
       width_ratio = 0.9,
       height_ratio = 0.7,
       border = border_style,
@@ -143,43 +144,17 @@ M.open = function(results_lsp, user_opts)
     return
   end
 
-  vim.wo[win].cursorline = true
-  vim.wo[win].cursorlineopt = 'line'
-  vim.wo[win].number = false
-  vim.wo[win].relativenumber = false
-  vim.wo[win].signcolumn = 'no'
-  vim.wo[win].wrap = false
-
-  local winhl = {}
-  if border.highlight then
-    table.insert(winhl, 'FloatBorder:' .. border.highlight)
-  end
-  if border.title_hl then
-    table.insert(winhl, 'FloatTitle:' .. border.title_hl)
-  end
-  if border.bottom_hl then
-    table.insert(winhl, 'FloatFooter:' .. border.bottom_hl)
-  end
-  table.insert(winhl, 'CursorLine:Visual')
-  if #winhl > 0 then
-    vim.wo[win].winhl = table.concat(winhl, ',')
-  end
+  window.apply_panel_window_options(win, { cursorline = true })
+  window.apply_border_winhl(win, border, { 'CursorLine:Visual' })
 
   local ui = {
     buf = buf,
     win = win,
-    row = 1,
-    col = 0,
-    model = built,
-    panel = build_panel_model(built),
     selected = (#built.actions > 0) and 1 or nil,
-    min_width = math.max(user_opts.min_width or 30, built.min_width or 30),
-    user_opts = user_opts,
-    request_state = request_state,
     border = border,
-    origin_win = origin_win,
-    ns = lifecycle.ensure_namespace('cosmic-ui-codeactions'),
+    ns = lifecycle.ensure_namespace(),
   }
+  apply_model(ui, built, user_opts, request_state, origin_win)
 
   lifecycle.attach_close_autocmds(ui, close_current)
   lifecycle.set_ui(ui)

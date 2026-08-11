@@ -15,13 +15,20 @@ M.status_icons = {
 
 M.ui_padding = ui_constants.padding
 
+M.panel_size = {
+  base_width = 64,
+  base_height = 14,
+  width_ratio = 0.9,
+  height_ratio = 0.8,
+}
+
+-- CosmicUiFmtCursorLine and CosmicUiFmtCursor are defined dynamically in
+-- formatters.ui.highlights with a computed background, not linked here.
 M.highlight_links = {
   CosmicUiFmtTitle = 'CosmicUiPanelTitle',
   CosmicUiFmtHeader = 'Identifier',
   CosmicUiFmtSection = 'CosmicUiPanelSection',
   CosmicUiFmtSubtitle = 'CosmicUiPanelSubtitle',
-  CosmicUiFmtCursorLine = 'CursorLine',
-  CosmicUiFmtCursor = 'Cursor',
   CosmicUiFmtEnabled = 'String',
   CosmicUiFmtDisabled = 'Comment',
   CosmicUiFmtUnavailable = 'WarningMsg',

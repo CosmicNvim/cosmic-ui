@@ -55,6 +55,48 @@ M.centered_float_config = function(width, height, opts)
   }
 end
 
+M.resolve_border = function(style)
+  if style == nil then
+    style = vim.o.winborder
+  end
+  if style == '' then
+    return nil
+  end
+  return style
+end
+
+M.apply_panel_window_options = function(win, opts)
+  opts = opts or {}
+  vim.wo[win].number = false
+  vim.wo[win].relativenumber = false
+  vim.wo[win].signcolumn = 'no'
+  vim.wo[win].wrap = false
+  if opts.cursorline then
+    vim.wo[win].cursorline = true
+    vim.wo[win].cursorlineopt = 'line'
+  end
+end
+
+M.apply_border_winhl = function(win, border, extra)
+  border = border or {}
+  local winhl = {}
+  if border.highlight then
+    table.insert(winhl, 'FloatBorder:' .. border.highlight)
+  end
+  if border.title_hl then
+    table.insert(winhl, 'FloatTitle:' .. border.title_hl)
+  end
+  if border.bottom_hl then
+    table.insert(winhl, 'FloatFooter:' .. border.bottom_hl)
+  end
+  for _, entry in ipairs(extra or {}) do
+    table.insert(winhl, entry)
+  end
+  if #winhl > 0 then
+    vim.wo[win].winhl = table.concat(winhl, ',')
+  end
+end
+
 M.open_float = function(buf, config)
   config = vim.tbl_extend('force', {
     relative = 'editor',

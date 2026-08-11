@@ -8,9 +8,9 @@ Provides shared helper functions used across rename/code actions/formatters, plu
 
 - `merge(...) -> table`: Deep-merges tables using `vim.tbl_deep_extend("force", ...)`.
 - `get_relative_path(file_path) -> string`: Decodes a file URI/path and returns a working-directory-relative path when possible, otherwise an absolute path.
-- `index_of(tbl, item) -> integer|nil`: Returns the first list index matching `item`, or `nil` if not found.
 - `Logger:log(msg, opts?)`: Emits an info notification using the configured notify title.
 - `Logger:warn(msg, opts?)`: Emits a warning notification using the configured notify title.
+- `Logger:warn_once(msg, opts?)`: Like `Logger:warn`, but via `vim.notify_once` so repeated messages notify only once.
 - `Logger:error(msg, opts?)`: Emits an error notification using the configured notify title.
 
 ## Usage

@@ -8,7 +8,12 @@ if vim.g.loaded_cosmic_ui then
 end
 
 vim.g.loaded_cosmic_ui = 1
-_G.CosmicUI = require('cosmic-ui')
+-- Lazy proxy so startup does not pay for loading the plugin modules.
+_G.CosmicUI = setmetatable({}, {
+  __index = function(_, key)
+    return require('cosmic-ui')[key]
+  end,
+})
 
 vim.api.nvim_create_user_command('CosmicRename', function()
   require('cosmic-ui').rename.open()

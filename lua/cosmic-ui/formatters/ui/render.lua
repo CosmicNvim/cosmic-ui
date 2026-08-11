@@ -83,9 +83,9 @@ M.render = function(ui, handlers, deps)
     return
   end
 
-  local icons = deps.rows.make_icons(devicons, ui.target_bufnr)
+  local icons = ui.icons or deps.rows.make_icons(devicons, ui.target_bufnr)
   local rows = deps.rows.build_rows(status, icons, deps.constants.status_icons)
-  local footer = panel.build({ footer = ui.footer }).footer
+  local footer = panel.normalize_footer(ui.footer)
 
   local header_left = ('%s %s'):format(icons.file, icons.filetype)
   local header_right = ('Scope: %s'):format(ui.scope)
@@ -99,7 +99,6 @@ M.render = function(ui, handlers, deps)
     table.insert(content_lines, '')
   end
 
-  max_content_width = math.max(max_content_width, vim.fn.strdisplaywidth(''))
   for _, row in ipairs(rows) do
     row.rendered_text = row_display_text(row)
     table.insert(content_lines, row.rendered_text)
@@ -108,7 +107,6 @@ M.render = function(ui, handlers, deps)
   end
 
   table.insert(content_lines, '')
-  max_content_width = math.max(max_content_width, vim.fn.strdisplaywidth(''))
   if #footer > 0 then
     local footer_text, footer_spans = panel.render_footer(footer)
     table.insert(content_lines, footer_text)
@@ -154,9 +152,10 @@ M.render = function(ui, handlers, deps)
     end
   end
 
-  local border = vim.o.winborder ~= '' and vim.o.winborder or nil
+  local size = deps.constants.panel_size
+  local border = window.resolve_border()
   local _, max_height = window.fit_float_size(1, vim.o.lines, {
-    height_ratio = 0.8,
+    height_ratio = size.height_ratio,
     border = border,
   })
   if #lines > max_height then
@@ -184,11 +183,11 @@ M.render = function(ui, handlers, deps)
   for _, line in ipairs(lines) do
     width = math.max(width, vim.fn.strdisplaywidth(line))
   end
-  width = math.max(width + 2, 64)
+  width = math.max(width + 2, size.base_width)
   local height = #lines
   width, height = window.fit_float_size(width, height, {
-    width_ratio = 0.9,
-    height_ratio = 0.8,
+    width_ratio = size.width_ratio,
+    height_ratio = size.height_ratio,
     border = border,
   })
 

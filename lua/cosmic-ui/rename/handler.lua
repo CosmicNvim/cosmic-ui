@@ -1,8 +1,7 @@
-local logger = require('cosmic-ui.utils').Logger
+local utils = require('cosmic-ui.utils')
+local logger = utils.Logger
 
 return function(err, result, ctx)
-  local utils = require('cosmic-ui.utils')
-
   if err then
     local method = (ctx and ctx.method) or 'textDocument/rename'
     local err_msg = err.message or vim.inspect(err)
