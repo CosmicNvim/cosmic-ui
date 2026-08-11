@@ -64,7 +64,10 @@ Behavior:
 - actions within each client group keep server response order
 - group headers are rendered as plain section rows
 - selection index/count is shown in the float border footer (right-aligned)
-- keymaps: `j`/`k`, `<Down>`/`<Up>`, `<Tab>`/`<S-Tab>`, `<CR>`/`<Space>`, `<Esc>`/`<C-c>`
+- key hints (`Enter:apply  q:close`) are rendered as an in-buffer footer row
+- the menu opens below the cursor and flips above it when there is not enough
+  screen space below
+- keymaps: `j`/`k`, `<Down>`/`<Up>`, `<Tab>`/`<S-Tab>`, `<CR>`/`<Space>`, `<Esc>`/`<C-c>`/`q`
 
 ```lua
 require("cosmic-ui").codeactions.open()

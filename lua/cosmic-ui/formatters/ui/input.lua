@@ -2,7 +2,7 @@ local M = {}
 
 M.footer_entries = function()
   return {
-    'Tab:toggle',
+    'Enter:toggle',
     's:scope',
     'r:reset',
     'a:toggle all',
@@ -121,6 +121,9 @@ M.set_keymaps = function(ui, handlers, deps)
   map('<Down>', function()
     move_selection(ui, 1, handlers, deps)
   end)
+  map('<Tab>', function()
+    move_selection(ui, 1, handlers, deps)
+  end)
 
   map('k', function()
     move_selection(ui, -1, handlers, deps)
@@ -128,8 +131,14 @@ M.set_keymaps = function(ui, handlers, deps)
   map('<Up>', function()
     move_selection(ui, -1, handlers, deps)
   end)
+  map('<S-Tab>', function()
+    move_selection(ui, -1, handlers, deps)
+  end)
 
-  map('<Tab>', function()
+  map('<CR>', function()
+    toggle_row(ui, handlers, deps)
+  end)
+  map('<Space>', function()
     toggle_row(ui, handlers, deps)
   end)
 
@@ -154,7 +163,6 @@ M.set_keymaps = function(ui, handlers, deps)
     handlers.format_async_fn({ scope = scope, bufnr = target_bufnr })
   end)
 
-  map('<CR>', deps.close_fn)
   map('<Esc>', deps.close_fn)
   map('q', deps.close_fn)
 end

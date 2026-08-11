@@ -81,10 +81,7 @@ local function render(ui, value)
   if ui.win and vim.api.nvim_win_is_valid(ui.win) then
     local height
     width, height = window.fit_float_size(width, ui.fixed_height or #lines, { border = ui.border })
-    local cfg = vim.api.nvim_win_get_config(ui.win)
-    cfg.width = width
-    cfg.height = height
-    vim.api.nvim_win_set_config(ui.win, cfg)
+    vim.api.nvim_win_set_config(ui.win, { width = width, height = height })
   end
 
   local was_modifiable = vim.bo[ui.buf].modifiable
@@ -227,7 +224,8 @@ M.open = function(opts)
     math.max(1, merged_window_opts.height or 5),
     { border = border.style }
   )
-  local win = window.open_float(buf, {
+
+  local float_config = {
     relative = merged_window_opts.relative,
     row = merged_window_opts.row,
     col = merged_window_opts.col,
@@ -237,7 +235,26 @@ M.open = function(opts)
     border = border.style,
     title = border.title,
     title_pos = border.title_align,
-  })
+  }
+
+  local position_override = opts.window or {}
+  if
+    position_override.relative == nil
+    and position_override.anchor == nil
+    and position_override.row == nil
+    and position_override.col == nil
+  then
+    local prompt_height = math.max(1, position_override.height or 1)
+    local placed =
+      window.cursor_float_config(window.cursor_placement(), initial_width, prompt_height, { border = border.style })
+    float_config.relative = placed.relative
+    float_config.anchor = placed.anchor
+    float_config.row = placed.row
+    float_config.col = placed.col
+    float_config.height = placed.height
+  end
+
+  local win = window.open_float(buf, float_config)
   if not win then
     window.safe_delete_buf(buf, { force = true })
     return

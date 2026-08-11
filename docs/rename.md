@@ -43,9 +43,9 @@ Rename input options.
 | `default_value` | `string\|nil` | No | current word | Initial value in rename input. |
 | `on_submit` | `function\|nil` | No | built-in rename submit | Callback executed when user submits value. |
 | `window` | `table\|nil` | No | internal defaults + rename config | Native float window overrides. |
-| `window.relative` | `string\|nil` | No | `"cursor"` | Float anchor mode. |
-| `window.row` | `integer\|nil` | No | `1` | Float row offset. |
-| `window.col` | `integer\|nil` | No | `0` | Float column offset. |
+| `window.relative` | `string\|nil` | No | auto (cursor position) | Float anchor mode. When `relative`/`anchor`/`row`/`col` are all omitted, the prompt opens below the cursor and flips above it when there is not enough screen space below. |
+| `window.row` | `integer\|nil` | No | auto | Float row offset (disables auto flip placement when set). |
+| `window.col` | `integer\|nil` | No | auto | Float column offset (disables auto flip placement when set). |
 | `window.width` | `integer\|nil` | No | auto-fit prompt + symbol | Float width. |
 | `window.height` | `integer\|nil` | No | auto-fit single prompt line (`1`) | Float height. |
 | `window.zindex` | `integer\|nil` | No | `50` | Float z-index. |

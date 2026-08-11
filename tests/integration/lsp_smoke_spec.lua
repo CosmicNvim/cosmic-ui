@@ -376,13 +376,13 @@ describe('cosmic-ui public API headless LSP smoke', function()
     assert.are.equal('cosmicui-formatters', vim.bo[formatter_buf].filetype)
     assert.is_true(buffer_contains(formatter_buf, 'cosmic-ui-headless-smoke'))
 
-    press('<Tab>')
+    press('<CR>')
     assert.is_false(cosmic.formatters.is_item_enabled({
       source = 'lsp',
       name = 'cosmic-ui-headless-smoke-' .. tostring(source_buf),
       bufnr = source_buf,
     }))
-    press('<Tab>')
+    press('<CR>')
     assert.is_true(cosmic.formatters.is_item_enabled({
       source = 'lsp',
       name = 'cosmic-ui-headless-smoke-' .. tostring(source_buf),

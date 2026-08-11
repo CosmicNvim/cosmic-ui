@@ -155,27 +155,6 @@ M.render = function(ui, handlers, deps)
   end
 
   local border = vim.o.winborder ~= '' and vim.o.winborder or nil
-  local _, max_height = window.fit_float_size(1, vim.o.lines, {
-    height_ratio = 0.8,
-    border = border,
-  })
-  if #lines > max_height then
-    lines = vim.list_slice(lines, 1, max_height)
-    lines[#lines] = '...'
-
-    local visible_rows = {}
-    for _, row in ipairs(rows) do
-      if row.lnum < max_height then
-        table.insert(visible_rows, row)
-      end
-    end
-    rows = visible_rows
-
-    if ui.footer_lnum and ui.footer_lnum >= #lines then
-      ui.footer_lnum = nil
-      ui.footer_spans = nil
-    end
-  end
 
   ui.rows = rows
   M.ensure_selection(ui)
