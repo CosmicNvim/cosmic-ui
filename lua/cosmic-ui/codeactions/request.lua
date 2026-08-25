@@ -7,7 +7,15 @@ local function code_action_diagnostics(client_id, bufnr, lnum)
   local diagnostic_provider = capabilities.diagnosticProvider
   local pull_id = type(diagnostic_provider) == 'table' and diagnostic_provider.identifier or nil
   local ns_push = vim.lsp.diagnostic.get_namespace(client_id)
-  local ns_pull = vim.lsp.diagnostic.get_namespace(client_id, pull_id or 'nil')
+  local ns_pull
+  -- 0.11 uses a pull boolean, 0.12.0 uses a provider ID, and 0.12.2 splits those into two arguments.
+  if vim.fn.has('nvim-0.12.2') == 1 then
+    ns_pull = vim.lsp.diagnostic.get_namespace(client_id, true, pull_id)
+  elseif vim.fn.has('nvim-0.12') == 1 then
+    ns_pull = vim.lsp.diagnostic.get_namespace(client_id, pull_id or 'nil')
+  else
+    ns_pull = vim.lsp.diagnostic.get_namespace(client_id, true)
+  end
 
   vim.list_extend(diagnostics, vim.diagnostic.get(bufnr, { namespace = ns_pull, lnum = lnum }))
   vim.list_extend(diagnostics, vim.diagnostic.get(bufnr, { namespace = ns_push, lnum = lnum }))

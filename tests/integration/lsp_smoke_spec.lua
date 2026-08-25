@@ -335,7 +335,6 @@ describe('cosmic-ui public API headless LSP smoke', function()
       params = {
         textDocument = { uri = vim.uri_from_bufnr(source_buf) },
         range = action_range,
-        context = { diagnostics = {} },
       },
     })
 

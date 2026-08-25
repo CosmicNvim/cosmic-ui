@@ -964,6 +964,64 @@ describe('cosmic-ui.codeactions.ui', function()
 end)
 
 describe('cosmic-ui.codeactions.request', function()
+  local function collect_namespace_calls(has_feature, diagnostic_providers)
+    local request = require('cosmic-ui.codeactions.request')
+    local original_has = vim.fn.has
+    local original_get_namespace = vim.lsp.diagnostic.get_namespace
+    local original_get_client_by_id = vim.lsp.get_client_by_id
+    local original_diagnostic_get = vim.diagnostic.get
+    local original_make_range_params = vim.lsp.util.make_range_params
+    local namespace_calls = {}
+    local clients = {}
+
+    vim.fn.has = has_feature
+    vim.lsp.get_client_by_id = function(client_id)
+      return {
+        server_capabilities = {
+          diagnosticProvider = diagnostic_providers[client_id],
+        },
+      }
+    end
+    vim.lsp.diagnostic.get_namespace = function(...)
+      local call = { count = select('#', ...) }
+      for index = 1, call.count do
+        call[index] = select(index, ...)
+      end
+      table.insert(namespace_calls, call)
+      return 0
+    end
+    vim.diagnostic.get = function()
+      return {}
+    end
+    vim.lsp.util.make_range_params = function()
+      return { context = {} }
+    end
+
+    for client_id = 1, #diagnostic_providers do
+      table.insert(clients, {
+        id = client_id,
+        offset_encoding = 'utf-16',
+        request = function(_, _, _, callback)
+          callback(nil, {})
+        end,
+      })
+    end
+
+    local ok, err = pcall(request.collect, {
+      bufnr = 0,
+      clients = clients,
+    })
+
+    vim.fn.has = original_has
+    vim.lsp.diagnostic.get_namespace = original_get_namespace
+    vim.lsp.get_client_by_id = original_get_client_by_id
+    vim.diagnostic.get = original_diagnostic_get
+    vim.lsp.util.make_range_params = original_make_range_params
+
+    assert.is_true(ok, err)
+    return namespace_calls
+  end
+
   it('reports loading before ready and keeps request metadata', function()
     local request = require('cosmic-ui.codeactions.request')
     local original_get_namespace = vim.lsp.diagnostic.get_namespace
@@ -974,7 +1032,6 @@ describe('cosmic-ui.codeactions.request', function()
     local seen = {}
     local source_buf = vim.api.nvim_get_current_buf()
     local final_state
-    local namespace_calls = {}
 
     vim.lsp.get_client_by_id = function(client_id)
       return {
@@ -983,12 +1040,7 @@ describe('cosmic-ui.codeactions.request', function()
         },
       }
     end
-    vim.lsp.diagnostic.get_namespace = function(client_id, pull_id)
-      table.insert(namespace_calls, {
-        client_id = client_id,
-        pull_id = pull_id,
-        pull_id_type = type(pull_id),
-      })
+    vim.lsp.diagnostic.get_namespace = function()
       return 0
     end
     vim.diagnostic.get = function()
@@ -1061,12 +1113,49 @@ describe('cosmic-ui.codeactions.request', function()
     }, seen)
     assert.are.equal(source_buf, final_state.responses[1].bufnr)
     assert.are.equal(source_buf, final_state.responses[2].bufnr)
-    assert.are.same({
-      { client_id = 1, pull_id_type = 'nil' },
-      { client_id = 1, pull_id = 'provider-1', pull_id_type = 'string' },
-      { client_id = 2, pull_id_type = 'nil' },
-      { client_id = 2, pull_id = 'provider-2', pull_id_type = 'string' },
-    }, namespace_calls)
+  end)
+
+  it('uses the matching namespace signature for each supported Neovim release', function()
+    local diagnostic_providers = {
+      { identifier = 'provider' },
+      true,
+    }
+
+    assert.are.same(
+      {
+        { count = 1, [1] = 1 },
+        { count = 3, [1] = 1, [2] = true, [3] = 'provider' },
+        { count = 1, [1] = 2 },
+        { count = 3, [1] = 2, [2] = true },
+      },
+      collect_namespace_calls(function(feature)
+        return feature == 'nvim-0.12.2' and 1 or 0
+      end, diagnostic_providers)
+    )
+
+    assert.are.same(
+      {
+        { count = 1, [1] = 1 },
+        { count = 2, [1] = 1, [2] = 'provider' },
+        { count = 1, [1] = 2 },
+        { count = 2, [1] = 2, [2] = 'nil' },
+      },
+      collect_namespace_calls(function(feature)
+        return feature == 'nvim-0.12' and 1 or 0
+      end, diagnostic_providers)
+    )
+
+    assert.are.same(
+      {
+        { count = 1, [1] = 1 },
+        { count = 2, [1] = 1, [2] = true },
+        { count = 1, [1] = 2 },
+        { count = 2, [1] = 2, [2] = true },
+      },
+      collect_namespace_calls(function()
+        return 0
+      end, diagnostic_providers)
+    )
   end)
 
   it('completes collection when a client request fails to start', function()
