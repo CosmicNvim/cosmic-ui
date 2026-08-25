@@ -76,15 +76,10 @@ describe('cosmic-ui commands', function()
     assert.is_truthy(after.CosmicFormatters)
     assert.is_truthy(after.CosmicFormat)
 
-    assert.matches('Open the Cosmic rename prompt', vim.fn.execute('command CosmicRename'), 1, true)
-    assert.matches('Open the Cosmic code action panel', vim.fn.execute('command CosmicCodeActions'), 1, true)
-    assert.matches('Open the Cosmic formatter panel', vim.fn.execute('command CosmicFormatters'), 1, true)
-    assert.matches(
-      'Format the current buffer with Cosmic formatter routing',
-      vim.fn.execute('command CosmicFormat'),
-      1,
-      true
-    )
+    assert.are.equal('Open the Cosmic rename prompt', after.CosmicRename.desc)
+    assert.are.equal('Open the Cosmic code action panel', after.CosmicCodeActions.desc)
+    assert.are.equal('Open the Cosmic formatter panel', after.CosmicFormatters.desc)
+    assert.are.equal('Format the current buffer with Cosmic formatter routing', after.CosmicFormat.desc)
 
     vim.cmd('CosmicRename')
     vim.cmd('CosmicCodeActions')
