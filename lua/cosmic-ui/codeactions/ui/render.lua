@@ -16,8 +16,9 @@ end
 local function apply_selection(ui)
   local indicator = selection_indicator(ui)
 
+  -- An omitted footer leaves the previous one in place, so clear it explicitly.
   window.set_float_config(ui.win, {
-    footer = indicator,
+    footer = indicator or '',
     footer_pos = indicator and 'right' or nil,
   })
 

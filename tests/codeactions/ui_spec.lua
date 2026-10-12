@@ -691,6 +691,21 @@ describe('cosmic-ui.codeactions.ui', function()
     assert.is_nil(lifecycle.get_state().ui)
   end)
 
+  it('clears the selection footer when a reused panel has no actions', function()
+    local ui = require('cosmic-ui.codeactions.ui')
+
+    ui.open({
+      [1] = { client = { id = 1, name = 'lua_ls' }, result = { { title = 'Fix' } } },
+    }, { border = { style = 'single' } })
+    local win = lifecycle.get_state().ui.win
+    assert.are.equal('(1/1)', vim.api.nvim_win_get_config(win).footer[1][1])
+
+    ui.open({ status = 'loading', responses = {}, total_clients = 1, completed_clients = 0 }, {})
+
+    assert.are.equal(win, lifecycle.get_state().ui.win)
+    assert.is_nil(vim.api.nvim_win_get_config(win).footer)
+  end)
+
   it('keeps the original window as the focus target when async results update the panel', function()
     local ui = require('cosmic-ui.codeactions.ui')
     local origin_win = vim.api.nvim_get_current_win()
