@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="https://github.com/neovim/neovim">
-    <img alt="Neovim Minimum Version" src="https://img.shields.io/badge/Neovim-0.11.0+-blueviolet.svg?style=flat-square&logo=Neovim&logoColor=white">
+    <img alt="Neovim Minimum Version" src="https://img.shields.io/badge/Neovim-0.13+-blueviolet.svg?style=flat-square&logo=Neovim&logoColor=white">
   </a>
   <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/CosmicNvim/cosmic-ui?style=flat-square&logo=Github">
   <a href="https://discord.gg/EwdrKzVbvJ">
@@ -228,7 +228,7 @@ More usage examples:
 
 ## Development
 
-Local validation requires Neovim 0.11+, Plenary.nvim on your runtimepath, and Stylua.
+Local validation requires Neovim 0.13+ (nightly), Plenary.nvim on your runtimepath, and Stylua.
 
 Run the full local check with:
 

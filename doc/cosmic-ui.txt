@@ -1,4 +1,4 @@
-*cosmic-ui.txt*    cosmic-ui for Neovim 0.11+    Last change: 2026 Jul 10
+*cosmic-ui.txt*    cosmic-ui for Neovim 0.13+    Last change: 2026 Jul 10
 
 ==============================================================================
 CONTENTS                                                     *cosmic-ui-contents*
@@ -42,7 +42,7 @@ Open this help any time with: >
 ==============================================================================
 2. Requirements                                           *cosmic-ui-requirements*
 
-- Neovim 0.11 or newer
+- Neovim 0.13 (currently nightly) or newer
 - nvim-web-devicons for the formatters UI
 
 If setup has not been called, or if a module is disabled, module calls warn and

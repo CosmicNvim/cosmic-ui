@@ -1,5 +1,5 @@
-if vim.fn.has('nvim-0.11') ~= 1 then
-  error('Sorry this plugin only supports Neovim version >= v0.11')
+if vim.fn.has('nvim-0.13') ~= 1 then
+  error('Sorry this plugin only supports Neovim version >= v0.13')
   return
 end
 

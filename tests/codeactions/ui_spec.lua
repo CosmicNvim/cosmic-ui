@@ -1026,9 +1026,8 @@ describe('cosmic-ui.codeactions.ui', function()
 end)
 
 describe('cosmic-ui.codeactions.request', function()
-  local function collect_namespace_calls(has_feature, diagnostic_providers)
+  local function collect_namespace_calls(diagnostic_providers)
     local request = require('cosmic-ui.codeactions.request')
-    local original_has = vim.fn.has
     local original_get_namespace = vim.lsp.diagnostic.get_namespace
     local original_get_client_by_id = vim.lsp.get_client_by_id
     local original_diagnostic_get = vim.diagnostic.get
@@ -1036,7 +1035,6 @@ describe('cosmic-ui.codeactions.request', function()
     local namespace_calls = {}
     local clients = {}
 
-    vim.fn.has = has_feature
     vim.lsp.get_client_by_id = function(client_id)
       return {
         server_capabilities = {
@@ -1074,7 +1072,6 @@ describe('cosmic-ui.codeactions.request', function()
       clients = clients,
     })
 
-    vim.fn.has = original_has
     vim.lsp.diagnostic.get_namespace = original_get_namespace
     vim.lsp.get_client_by_id = original_get_client_by_id
     vim.diagnostic.get = original_diagnostic_get
@@ -1177,24 +1174,7 @@ describe('cosmic-ui.codeactions.request', function()
     assert.are.equal(source_buf, final_state.responses[2].bufnr)
   end)
 
-  it('uses the matching namespace signature for each supported Neovim release', function()
-    local diagnostic_providers = {
-      { identifier = 'provider' },
-      true,
-    }
-
-    assert.are.same(
-      {
-        { count = 1, [1] = 1 },
-        { count = 3, [1] = 1, [2] = true, [3] = 'provider' },
-        { count = 1, [1] = 2 },
-        { count = 3, [1] = 2, [2] = true },
-      },
-      collect_namespace_calls(function(feature)
-        return feature == 'nvim-0.12.2' and 1 or 0
-      end, diagnostic_providers)
-    )
-
+  it('reads pull diagnostics from the namespace keyed by provider ID', function()
     assert.are.same(
       {
         { count = 1, [1] = 1 },
@@ -1202,21 +1182,10 @@ describe('cosmic-ui.codeactions.request', function()
         { count = 1, [1] = 2 },
         { count = 2, [1] = 2, [2] = 'nil' },
       },
-      collect_namespace_calls(function(feature)
-        return feature == 'nvim-0.12' and 1 or 0
-      end, diagnostic_providers)
-    )
-
-    assert.are.same(
-      {
-        { count = 1, [1] = 1 },
-        { count = 2, [1] = 1, [2] = true },
-        { count = 1, [1] = 2 },
-        { count = 2, [1] = 2, [2] = true },
-      },
-      collect_namespace_calls(function()
-        return 0
-      end, diagnostic_providers)
+      collect_namespace_calls({
+        { identifier = 'provider' },
+        true,
+      })
     )
   end)
 
