@@ -416,6 +416,25 @@ describe('cosmic-ui.rename.ui', function()
     assert.are.equal(7, cfg.height)
   end)
 
+  it('grows with the typed name and stays on screen near the right edge', function()
+    stub_rename_context('x')
+    local col = vim.o.columns - 20
+    prepare_named_buffer({ string.rep(' ', col) .. 'x' }, { 1, col })
+
+    local ui = require('cosmic-ui.rename.ui')
+    ui.open({ default_value = 'x' })
+    local win = vim.api.nvim_get_current_win()
+    assert.are.equal(30, vim.api.nvim_win_get_width(win))
+
+    local buf = vim.api.nvim_get_current_buf()
+    vim.api.nvim_buf_set_text(buf, 0, 3, 0, 3, { string.rep('n', 40) })
+    vim.api.nvim_exec_autocmds('TextChangedI', { buffer = buf })
+
+    local width = vim.api.nvim_win_get_width(win)
+    assert.are.equal(#'> x' + 40 + 1, width)
+    assert.is_true(vim.api.nvim_win_get_position(win)[2] + width <= vim.o.columns)
+  end)
+
   it('rejects empty submit without adding validation rows', function()
     stub_rename_context('current_name')
 

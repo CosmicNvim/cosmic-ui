@@ -8,6 +8,7 @@ local model = require('cosmic-ui.rename.model')
 local M = {}
 local prompt_ns = vim.api.nvim_create_namespace('cosmic-ui-rename-prompt')
 local PROMPT_ROW = 1
+local MIN_WIDTH = 30
 
 local function assert_table(val)
   return val == nil or type(val) == 'table'
@@ -65,6 +66,28 @@ local function default_submitter(target_ctx)
   end
 end
 
+-- Fits the text plus the insert-mode cursor after its last character.
+local function prompt_width(text)
+  return math.max(MIN_WIDTH, vim.fn.strdisplaywidth(text) + 1)
+end
+
+local function resize(ui)
+  if not (ui.win and vim.api.nvim_win_is_valid(ui.win)) then
+    return
+  end
+
+  local line = vim.api.nvim_buf_get_lines(ui.buf, PROMPT_ROW - 1, PROMPT_ROW, true)[1] or ''
+  local width, height =
+    window.fit_float_size(ui.fixed_width or prompt_width(line), ui.fixed_height or 1, { border = ui.border })
+
+  local config = { width = width, height = height }
+  if ui.placement then
+    -- Floats are not moved back on screen when they grow, so re-place it.
+    config = window.cursor_float_config(ui.placement, width, height, { border = ui.border })
+  end
+  vim.api.nvim_win_set_config(ui.win, config)
+end
+
 local function render(ui, value)
   if not (ui.buf and vim.api.nvim_buf_is_valid(ui.buf)) then
     return
@@ -72,17 +95,6 @@ local function render(ui, value)
 
   local prompt_line = ui.prompt .. value
   local lines = { prompt_line }
-
-  local width = ui.fixed_width or 30
-  if not ui.fixed_width then
-    width = math.max(width, vim.fn.strdisplaywidth(prompt_line))
-  end
-
-  if ui.win and vim.api.nvim_win_is_valid(ui.win) then
-    local height
-    width, height = window.fit_float_size(width, ui.fixed_height or #lines, { border = ui.border })
-    vim.api.nvim_win_set_config(ui.win, { width = width, height = height })
-  end
 
   local was_modifiable = vim.bo[ui.buf].modifiable
   vim.bo[ui.buf].modifiable = true
@@ -101,6 +113,7 @@ local function render(ui, value)
   end
 
   ui.prompt_col = #ui.prompt
+  resize(ui)
 
   if ui.win and vim.api.nvim_win_is_valid(ui.win) then
     pcall(vim.api.nvim_win_set_cursor, ui.win, { PROMPT_ROW, #prompt_line })
@@ -192,8 +205,8 @@ M.open = function(opts)
     relative = 'cursor',
     row = 1,
     col = 0,
-    width = math.max(30, #prompt + #default_value + 2),
-    height = 5,
+    width = prompt_width(prompt .. default_value),
+    height = 1,
     zindex = 50,
     border = {
       style = window.resolve_border(user_border.style),
@@ -219,8 +232,8 @@ M.open = function(opts)
 
   local border = merged_window_opts.border or {}
   local initial_width, initial_height = window.fit_float_size(
-    math.max(1, merged_window_opts.width or 30),
-    math.max(1, merged_window_opts.height or 5),
+    math.max(1, merged_window_opts.width),
+    math.max(1, merged_window_opts.height),
     { border = border.style }
   )
 
@@ -236,6 +249,7 @@ M.open = function(opts)
     title_pos = border.title_align,
   }
 
+  local placement
   local position_override = opts.window or {}
   if
     position_override.relative == nil
@@ -243,9 +257,8 @@ M.open = function(opts)
     and position_override.row == nil
     and position_override.col == nil
   then
-    local prompt_height = math.max(1, position_override.height or 1)
-    local placed =
-      window.cursor_float_config(window.cursor_placement(), initial_width, prompt_height, { border = border.style })
+    placement = window.cursor_placement()
+    local placed = window.cursor_float_config(placement, initial_width, initial_height, { border = border.style })
     float_config.relative = placed.relative
     float_config.anchor = placed.anchor
     float_config.row = placed.row
@@ -272,6 +285,7 @@ M.open = function(opts)
     fixed_width = opts.window and opts.window.width or nil,
     fixed_height = opts.window and opts.window.height or nil,
     border = border.style,
+    placement = placement,
     closed = false,
     submitted = false,
   }
@@ -343,6 +357,16 @@ M.open = function(opts)
       ensure_cursor_after_prompt(ui)
     end,
   })
+
+  if not ui.fixed_width then
+    vim.api.nvim_create_autocmd({ 'TextChanged', 'TextChangedI' }, {
+      group = ui.augroup,
+      buffer = buf,
+      callback = function()
+        resize(ui)
+      end,
+    })
+  end
 
   local map_opts = { buffer = buf, silent = true, nowait = true }
   vim.keymap.set('i', '<BS>', function()
