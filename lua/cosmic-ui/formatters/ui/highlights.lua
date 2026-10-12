@@ -20,7 +20,7 @@ local function add_hl(bufnr, ns, lnum, group, col_start, col_end)
     return
   end
 
-  vim.api.nvim_buf_add_highlight(bufnr, ns, group, lnum, col_start, col_end)
+  shared_highlights.add(bufnr, ns, group, lnum, col_start, col_end)
 end
 
 local function status_hl_group(status)

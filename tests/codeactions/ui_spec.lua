@@ -390,7 +390,7 @@ describe('cosmic-ui.codeactions.ui', function()
     local original_strdisplaywidth = vim.fn.strdisplaywidth
     local original_set_lines = vim.api.nvim_buf_set_lines
     local original_clear_namespace = vim.api.nvim_buf_clear_namespace
-    local original_add_highlight = vim.api.nvim_buf_add_highlight
+    local original_set_extmark = vim.api.nvim_buf_set_extmark
     local original_set_config = vim.api.nvim_win_set_config
 
     vim.fn.strdisplaywidth = function()
@@ -402,7 +402,7 @@ describe('cosmic-ui.codeactions.ui', function()
     vim.api.nvim_buf_clear_namespace = function()
       error('selection update should not clear existing highlights')
     end
-    vim.api.nvim_buf_add_highlight = function()
+    vim.api.nvim_buf_set_extmark = function()
       error('selection update should not rebuild highlights')
     end
     vim.api.nvim_win_set_config = function(target, cfg)
@@ -421,7 +421,7 @@ describe('cosmic-ui.codeactions.ui', function()
     vim.fn.strdisplaywidth = original_strdisplaywidth
     vim.api.nvim_buf_set_lines = original_set_lines
     vim.api.nvim_buf_clear_namespace = original_clear_namespace
-    vim.api.nvim_buf_add_highlight = original_add_highlight
+    vim.api.nvim_buf_set_extmark = original_set_extmark
     vim.api.nvim_win_set_config = original_set_config
 
     if not ok then

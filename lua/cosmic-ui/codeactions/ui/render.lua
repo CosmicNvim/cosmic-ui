@@ -1,5 +1,6 @@
 local panel = require('cosmic-ui.ui.panel')
 local ui_constants = require('cosmic-ui.ui.constants')
+local ui_highlights = require('cosmic-ui.ui.highlights')
 local window = require('cosmic-ui.window')
 
 local M = {}
@@ -105,12 +106,12 @@ M.render = function(ui)
 
   for line_no, meta in pairs(highlights) do
     if meta.highlight then
-      vim.api.nvim_buf_add_highlight(ui.buf, ns, meta.highlight, line_no - 1, 0, -1)
+      ui_highlights.add(ui.buf, ns, meta.highlight, line_no - 1, 0, -1)
     end
 
     for _, span in ipairs(meta.spans or {}) do
       if span.end_col >= span.start_col then
-        vim.api.nvim_buf_add_highlight(ui.buf, ns, span.highlight, line_no - 1, span.start_col, span.end_col)
+        ui_highlights.add(ui.buf, ns, span.highlight, line_no - 1, span.start_col, span.end_col)
       end
     end
   end
