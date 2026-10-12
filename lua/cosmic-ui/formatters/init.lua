@@ -67,15 +67,6 @@ local function mutate_item(opts, mutator, action_name)
   )
 end
 
-local function run_lsp_format(bufnr, scope, async, lsp_opts)
-  return lsp_backend.run_lsp({
-    bufnr = bufnr,
-    scope = scope,
-    async = async,
-    lsp_opts = lsp_opts,
-  })
-end
-
 local function format_internal(opts, async)
   opts = opts or {}
   local scope = normalize.resolve_scope(opts.scope)
@@ -105,9 +96,6 @@ local function format_internal(opts, async)
     return false
   end
 
-  local conform_opts = vim.deepcopy(opts.conform or {})
-  local lsp_opts = vim.deepcopy(opts.lsp or {})
-
   local conform = conform_backend.get_conform_module()
   if conform_enabled and conform then
     return conform_backend.run_conform({
@@ -115,7 +103,7 @@ local function format_internal(opts, async)
       bufnr = bufnr,
       scope = scope,
       async = async,
-      conform_opts = conform_opts,
+      conform_opts = opts.conform,
       lsp_enabled = lsp_enabled,
     })
   end
@@ -128,7 +116,12 @@ local function format_internal(opts, async)
     logger:warn_once('Conform.nvim not available; using LSP formatting fallback.')
   end
 
-  return run_lsp_format(bufnr, scope, async, lsp_opts)
+  return lsp_backend.run_lsp({
+    bufnr = bufnr,
+    scope = scope,
+    async = async,
+    lsp_opts = opts.lsp,
+  })
 end
 
 M.open = function(opts)

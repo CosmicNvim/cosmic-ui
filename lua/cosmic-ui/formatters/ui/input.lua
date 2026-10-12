@@ -100,11 +100,7 @@ local function toggle_all_rows(ui, handlers, deps)
   end
 
   for _, row in ipairs(toggleable) do
-    if all_enabled then
-      deps.state.set_item_state(row.action.source, row.action.name, ui.scope, ui.target_bufnr, false)
-    else
-      deps.state.set_item_state(row.action.source, row.action.name, ui.scope, ui.target_bufnr, true)
-    end
+    deps.state.set_item_state(row.action.source, row.action.name, ui.scope, ui.target_bufnr, not all_enabled)
   end
 
   deps.render_fn(ui, handlers)

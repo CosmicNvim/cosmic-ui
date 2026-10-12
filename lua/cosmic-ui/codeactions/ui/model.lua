@@ -35,11 +35,6 @@ local function extract_request_state(results_lsp)
   }
 end
 
-local function push_row(rows, row, min_width)
-  table.insert(rows, row)
-  return math.max(min_width, vim.fn.strdisplaywidth(row.text or ''), MIN_WIDTH)
-end
-
 M.build = function(results_lsp)
   local request_state = extract_request_state(results_lsp)
   local rows = {}
@@ -87,10 +82,8 @@ M.build = function(results_lsp)
   for _, response in ipairs(sorted_responses) do
     local client = response.client
     if client and client.name then
-      min_width = push_row(rows, {
-        kind = 'section',
-        text = client.name,
-      }, min_width)
+      table.insert(rows, { kind = 'section', text = client.name })
+      min_width = math.max(min_width, vim.fn.strdisplaywidth(client.name))
 
       for _, result in ipairs(response.result) do
         local command_title = sanitize_title(result.title or '')
@@ -104,7 +97,7 @@ M.build = function(results_lsp)
           disabled = result.disabled,
         }
 
-        min_width = math.max(min_width, vim.fn.strdisplaywidth(display_title), MIN_WIDTH)
+        min_width = math.max(min_width, vim.fn.strdisplaywidth(display_title))
         table.insert(rows, action)
         table.insert(actions, action)
       end
@@ -119,17 +112,17 @@ M.build = function(results_lsp)
       rows = {
         { kind = 'state', state = 'error', text = error_text },
       }
-      min_width = math.max(min_width, vim.fn.strdisplaywidth(error_text), MIN_WIDTH)
+      min_width = math.max(min_width, vim.fn.strdisplaywidth(error_text))
     else
       local empty_row = states.empty('No code actions available')
       rows = { empty_row }
-      min_width = math.max(min_width, vim.fn.strdisplaywidth(empty_row.text), MIN_WIDTH)
+      min_width = math.max(min_width, vim.fn.strdisplaywidth(empty_row.text))
     end
   elseif has_partial_error then
     local warning_text =
       pluralize(error_count, 'source failed to return code actions', 'sources failed to return code actions')
     table.insert(rows, 1, { kind = 'state', state = 'warn', text = warning_text })
-    min_width = math.max(min_width, vim.fn.strdisplaywidth(warning_text), MIN_WIDTH)
+    min_width = math.max(min_width, vim.fn.strdisplaywidth(warning_text))
   end
 
   return {

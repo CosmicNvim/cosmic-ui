@@ -60,11 +60,10 @@ M.render = function(ui)
 
   M.ensure_selection(ui)
 
+  local border = window.resolve_border(ui.border and ui.border.style)
   local prepared = panel.prepare_standard(ui.panel, {
     min_width = ui.min_width or ui_constants.min_width,
     clamp_size = function(width, height)
-      local border = window.resolve_border(ui.border and ui.border.style)
-
       return window.fit_float_size(width, height, {
         width_ratio = 0.9,
         height_ratio = 0.7,
@@ -86,11 +85,6 @@ M.render = function(ui)
     }
 
     if ui.placement then
-      local border = ui.border and ui.border.style
-      if border == nil then
-        border = vim.o.winborder
-      end
-
       local placed = window.cursor_float_config(ui.placement, width, height, { border = border })
       cfg.relative = placed.relative
       cfg.anchor = placed.anchor

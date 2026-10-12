@@ -284,7 +284,7 @@ M.run_conform = function(opts)
   local conform_opts = opts.conform_opts
   local lsp_enabled = opts.lsp_enabled
 
-  local names = select(1, M.get_conform_formatter_names(bufnr)) or {}
+  local names = M.get_conform_formatter_names(bufnr) or {}
   local allowed = {}
   for _, name in ipairs(names) do
     if state.get_effective_item_state('conform', name, scope, bufnr) then
@@ -309,7 +309,7 @@ M.run_conform = function(opts)
   end
 
   local mode_sources = M.resolve_conform_mode_sources(bufnr, conform_opts and conform_opts.lsp_format)
-  local effective_lsp_format = select(1, M.resolve_effective_conform_lsp_mode(mode_sources, lsp_enabled))
+  local effective_lsp_format = M.resolve_effective_conform_lsp_mode(mode_sources, lsp_enabled)
   local any_formatters = #allowed > 0
   local can_use_lsp = M.conform_mode_uses_lsp(effective_lsp_format, any_formatters)
 
@@ -330,7 +330,8 @@ M.run_conform = function(opts)
   }, user_opts)
   format_opts.formatters = allowed
 
-  if lsp_enabled and effective_lsp_format ~= 'never' then
+  -- The effective mode is already clamped to `never` when the LSP backend is disabled.
+  if effective_lsp_format ~= 'never' then
     local _, enabled_ids = lsp_backend.get_lsp_items(bufnr, scope)
     format_opts.filter = function(client)
       if not enabled_ids[client.id] then
@@ -341,8 +342,6 @@ M.run_conform = function(opts)
       end
       return true
     end
-  elseif user_filter and effective_lsp_format ~= 'never' then
-    format_opts.filter = user_filter
   end
 
   if async then
