@@ -7,8 +7,14 @@ local function code_action_diagnostics(client_id, bufnr, lnum)
   local diagnostic_provider = capabilities.diagnosticProvider
   local pull_id = type(diagnostic_provider) == 'table' and diagnostic_provider.identifier or nil
   local ns_push = vim.lsp.diagnostic.get_namespace(client_id)
-  -- Pull namespaces are keyed by provider ID; providers without one use 'nil'.
-  local ns_pull = vim.lsp.diagnostic.get_namespace(client_id, pull_id or 'nil')
+  local ns_pull
+  -- Both signatures report 0.13-dev, so detect by arity: current builds take
+  -- (client_id, is_pull, pull_id), early ones took (client_id, pull_id).
+  if debug.getinfo(vim.lsp.diagnostic.get_namespace, 'u').nparams >= 3 then
+    ns_pull = vim.lsp.diagnostic.get_namespace(client_id, true, pull_id)
+  else
+    ns_pull = vim.lsp.diagnostic.get_namespace(client_id, pull_id or 'nil')
+  end
 
   vim.list_extend(diagnostics, vim.diagnostic.get(bufnr, { namespace = ns_pull, lnum = lnum }))
   vim.list_extend(diagnostics, vim.diagnostic.get(bufnr, { namespace = ns_push, lnum = lnum }))

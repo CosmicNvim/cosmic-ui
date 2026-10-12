@@ -1026,7 +1026,7 @@ describe('cosmic-ui.codeactions.ui', function()
 end)
 
 describe('cosmic-ui.codeactions.request', function()
-  local function collect_namespace_calls(diagnostic_providers)
+  local function collect_namespace_calls(make_get_namespace, diagnostic_providers)
     local request = require('cosmic-ui.codeactions.request')
     local original_get_namespace = vim.lsp.diagnostic.get_namespace
     local original_get_client_by_id = vim.lsp.get_client_by_id
@@ -1042,14 +1042,10 @@ describe('cosmic-ui.codeactions.request', function()
         },
       }
     end
-    vim.lsp.diagnostic.get_namespace = function(...)
-      local call = { count = select('#', ...) }
-      for index = 1, call.count do
-        call[index] = select(index, ...)
-      end
+    vim.lsp.diagnostic.get_namespace = make_get_namespace(function(call)
       table.insert(namespace_calls, call)
       return 0
-    end
+    end)
     vim.diagnostic.get = function()
       return {}
     end
@@ -1175,17 +1171,28 @@ describe('cosmic-ui.codeactions.request', function()
   end)
 
   it('reads pull diagnostics from the namespace keyed by provider ID', function()
+    local diagnostic_providers = {
+      { identifier = 'provider' },
+      true,
+    }
+
     assert.are.same(
-      {
-        { count = 1, [1] = 1 },
-        { count = 2, [1] = 1, [2] = 'provider' },
-        { count = 1, [1] = 2 },
-        { count = 2, [1] = 2, [2] = 'nil' },
-      },
-      collect_namespace_calls({
-        { identifier = 'provider' },
-        true,
-      })
+      { { 1 }, { 1, true, 'provider' }, { 2 }, { 2, true } },
+      collect_namespace_calls(function(record)
+        return function(client_id, is_pull, pull_id)
+          return record({ client_id, is_pull, pull_id })
+        end
+      end, diagnostic_providers)
+    )
+
+    -- Early 0.13-dev builds took the provider ID as the second argument.
+    assert.are.same(
+      { { 1 }, { 1, 'provider' }, { 2 }, { 2, 'nil' } },
+      collect_namespace_calls(function(record)
+        return function(client_id, pull_id)
+          return record({ client_id, pull_id })
+        end
+      end, diagnostic_providers)
     )
   end)
 

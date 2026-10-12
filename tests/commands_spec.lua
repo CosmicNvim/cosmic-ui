@@ -76,10 +76,15 @@ describe('cosmic-ui commands', function()
     assert.is_truthy(after.CosmicFormatters)
     assert.is_truthy(after.CosmicFormat)
 
-    assert.are.equal('Open the Cosmic rename prompt', after.CosmicRename.definition)
-    assert.are.equal('Open the Cosmic code action panel', after.CosmicCodeActions.definition)
-    assert.are.equal('Open the Cosmic formatter panel', after.CosmicFormatters.definition)
-    assert.are.equal('Format the current buffer with Cosmic formatter routing', after.CosmicFormat.definition)
+    -- Current 0.13-dev builds report `desc`; early ones put it in `definition`.
+    local function desc(name)
+      return after[name].desc or after[name].definition
+    end
+
+    assert.are.equal('Open the Cosmic rename prompt', desc('CosmicRename'))
+    assert.are.equal('Open the Cosmic code action panel', desc('CosmicCodeActions'))
+    assert.are.equal('Open the Cosmic formatter panel', desc('CosmicFormatters'))
+    assert.are.equal('Format the current buffer with Cosmic formatter routing', desc('CosmicFormat'))
 
     vim.cmd('CosmicRename')
     vim.cmd('CosmicCodeActions')
