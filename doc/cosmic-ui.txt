@@ -257,7 +257,8 @@ Selection rules:
 
 - uses opts.range when provided
 - otherwise uses opts.params when provided
-- otherwise builds the range from '< and '> visual marks
+- otherwise builds the range from the active visual selection, or from the
+  '< and '> marks outside visual mode
 
 Examples: >
   require("cosmic-ui").codeactions.open()

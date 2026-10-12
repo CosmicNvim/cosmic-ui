@@ -23,6 +23,33 @@ M.get_relative_path = function(file_path)
   return absolute_path
 end
 
+-- Range of the active charwise/linewise visual selection. The `'<`/`'>` marks
+-- are only updated after leaving visual mode, so read the live positions.
+M.range_from_selection = function(bufnr, mode)
+  local start = vim.fn.getpos('v')
+  local finish = vim.fn.getpos('.')
+  local start_row, start_col = start[2], start[3]
+  local end_row, end_col = finish[2], finish[3]
+
+  if start_row == end_row and end_col < start_col then
+    start_col, end_col = end_col, start_col
+  elseif end_row < start_row then
+    start_row, end_row = end_row, start_row
+    start_col, end_col = end_col, start_col
+  end
+
+  if mode == 'V' then
+    start_col = 1
+    local line = vim.api.nvim_buf_get_lines(bufnr, end_row - 1, end_row, true)[1]
+    end_col = #line
+  end
+
+  return {
+    start = { start_row, start_col - 1 },
+    ['end'] = { end_row, end_col - 1 },
+  }
+end
+
 M.Logger = {}
 
 local function log(type, msg, opts, notify)

@@ -32,7 +32,7 @@ local function build_panel_model(built)
   })
 end
 
-local function apply_model(ui, built, user_opts, request_state, origin_win)
+local function apply_model(ui, built, user_opts, request_state)
   local min_width = ui_constants.min_width
   ui.model = built
   ui.panel = build_panel_model(built)
@@ -40,7 +40,6 @@ local function apply_model(ui, built, user_opts, request_state, origin_win)
   ui.user_opts = user_opts
   ui.request_state = request_state
   ui.border = user_opts.border or ui.border or {}
-  ui.origin_win = origin_win
 end
 
 local function submit_action(action)
@@ -99,21 +98,23 @@ M.open = function(results_lsp, user_opts)
   local request_state = nil
   if type(results_lsp) == 'table' and results_lsp.responses then
     request_state = results_lsp
-    if lifecycle.is_request_dismissed(request_state) then
+    if not lifecycle.track_request(request_state) then
       return
     end
   end
 
   user_opts = user_opts or {}
   local built = model.build(results_lsp)
-  local origin_win = vim.api.nvim_get_current_win()
   local existing = lifecycle.get_state().ui
 
   if existing and vim.api.nvim_buf_is_valid(existing.buf) and vim.api.nvim_win_is_valid(existing.win) then
-    apply_model(existing, built, user_opts, request_state, origin_win)
+    -- The panel is focused here, so keep the window it was opened from.
+    apply_model(existing, built, user_opts, request_state)
     render.render(existing)
     return
   end
+
+  local origin_win = vim.api.nvim_get_current_win()
 
   local border = user_opts.border or {}
   local border_style = window.resolve_border(border.style)
@@ -166,7 +167,7 @@ M.open = function(results_lsp, user_opts)
     placement = placement,
     ns = lifecycle.ensure_namespace(),
   }
-  apply_model(ui, built, user_opts, request_state, origin_win)
+  apply_model(ui, built, user_opts, request_state)
 
   lifecycle.attach_close_autocmds(ui, close_current)
   lifecycle.set_ui(ui)

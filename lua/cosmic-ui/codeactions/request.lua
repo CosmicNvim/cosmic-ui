@@ -85,7 +85,7 @@ M.collect = function(opts)
   end
 
   if on_complete then
-    on_complete(request_state, user_opts)
+    on_complete(request_state)
   end
 
   local completed = {}

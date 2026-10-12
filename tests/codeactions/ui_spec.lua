@@ -658,6 +658,53 @@ describe('cosmic-ui.codeactions.ui', function()
     assert.is_nil(lifecycle.get_state().ui)
   end)
 
+  it('ignores late results from an older request once a newer request has started', function()
+    local ui = require('cosmic-ui.codeactions.ui')
+    local function loading()
+      return { status = 'loading', responses = {}, total_clients = 1, completed_clients = 0 }
+    end
+    local function finish(request_state, title)
+      request_state.status = 'ready'
+      request_state.completed_clients = 1
+      request_state.responses[1] = { client = { id = 1, name = 'lua_ls' }, result = { { title = title } } }
+    end
+
+    local older = loading()
+    ui.open(older, {})
+    vim.api.nvim_exec_autocmds('BufLeave', { buffer = lifecycle.get_state().ui.buf })
+
+    local newer = loading()
+    ui.open(newer, {})
+    local newer_ui = lifecycle.get_state().ui
+
+    finish(older, 'Old fix')
+    ui.open(older, {})
+
+    assert.are.equal(newer_ui, lifecycle.get_state().ui)
+    assert.are.equal(newer, newer_ui.request_state)
+    assert.is_false(vim.tbl_contains(vim.api.nvim_buf_get_lines(newer_ui.buf, 0, -1, false), ' Old fix '))
+
+    ui.close()
+    finish(newer, 'New fix')
+    ui.open(newer, {})
+
+    assert.is_nil(lifecycle.get_state().ui)
+  end)
+
+  it('keeps the original window as the focus target when async results update the panel', function()
+    local ui = require('cosmic-ui.codeactions.ui')
+    local origin_win = vim.api.nvim_get_current_win()
+    local request_state = { status = 'loading', responses = {}, total_clients = 1, completed_clients = 0 }
+
+    ui.open(request_state, {})
+    request_state.status = 'ready'
+    request_state.completed_clients = 1
+    request_state.responses[1] = { client = { id = 1, name = 'lua_ls' }, result = { { title = 'Fix' } } }
+    ui.open(request_state, {})
+
+    assert.are.equal(origin_win, lifecycle.get_state().ui.origin_win)
+  end)
+
   it('executes plain commands directly with their source buffer context', function()
     local ui = require('cosmic-ui.codeactions.ui')
     local source_buf = vim.api.nvim_get_current_buf()
@@ -1397,5 +1444,41 @@ describe('cosmic-ui.codeactions.request', function()
     vim.lsp.util.make_range_params = original_make_range_params
 
     assert.is_true(ok, err)
+  end)
+end)
+
+describe('cosmic-ui.codeactions', function()
+  it('builds range requests from the live visual selection instead of stale marks', function()
+    local cosmic = require('cosmic-ui')
+    local request = require('cosmic-ui.codeactions.request')
+    local original_collect = request.collect
+    local original_get_clients = vim.lsp.get_clients
+    local buf = vim.api.nvim_create_buf(false, true)
+    local captured
+
+    cosmic.setup({ codeactions = {} })
+    vim.api.nvim_set_current_buf(buf)
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, { 'one', 'two', 'three', 'four' })
+    vim.lsp.get_clients = function()
+      return { { id = 1, name = 'fake' } }
+    end
+    request.collect = function(opts)
+      captured = opts.user_opts.range
+    end
+    vim.keymap.set('x', '<Plug>(cosmic-test-range)', function()
+      cosmic.codeactions.range()
+    end, { buffer = buf })
+
+    local ok, err = pcall(function()
+      -- Leave stale `'<`/`'>` marks on line 1, then select lines 3-4 linewise.
+      vim.api.nvim_feedkeys(vim.keycode('ggvl<Esc>3GVj<Plug>(cosmic-test-range)<Esc>'), 'xt', false)
+    end)
+
+    request.collect = original_collect
+    vim.lsp.get_clients = original_get_clients
+    vim.api.nvim_buf_delete(buf, { force = true })
+
+    assert.is_true(ok, err)
+    assert.are.same({ start = { 3, 0 }, ['end'] = { 4, 3 } }, captured)
   end)
 end)

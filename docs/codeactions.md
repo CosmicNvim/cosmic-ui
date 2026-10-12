@@ -94,7 +94,7 @@ Requests code actions for the active visual selection.
 Behavior:
 - uses `opts.range` when provided
 - else uses `opts.params` when provided
-- else builds range from visual marks `'<` and `'>`
+- else builds range from the active visual selection, or from the `'<` and `'>` marks outside visual mode
 - warns and no-ops if `setup()` has not run or module is disabled
 
 ```lua

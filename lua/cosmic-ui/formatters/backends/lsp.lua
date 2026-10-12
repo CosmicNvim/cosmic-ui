@@ -100,36 +100,11 @@ M.lsp_backend_state = function(scope, bufnr)
   return M.lsp_backend_state_from_items(scope, bufnr, enabled_ids)
 end
 
-local function range_from_selection(bufnr, mode)
-  local start = vim.fn.getpos('v')
-  local finish = vim.fn.getpos('.')
-  local start_row, start_col = start[2], start[3]
-  local end_row, end_col = finish[2], finish[3]
-
-  if start_row == end_row and end_col < start_col then
-    start_col, end_col = end_col, start_col
-  elseif end_row < start_row then
-    start_row, end_row = end_row, start_row
-    start_col, end_col = end_col, start_col
-  end
-
-  if mode == 'V' then
-    start_col = 1
-    local line = vim.api.nvim_buf_get_lines(bufnr, end_row - 1, end_row, true)[1]
-    end_col = #line
-  end
-
-  return {
-    start = { start_row, start_col - 1 },
-    ['end'] = { end_row, end_col - 1 },
-  }
-end
-
 local function formatting_method_and_range(bufnr, requested_range)
   local range = requested_range
   local mode = vim.api.nvim_get_mode().mode
   if not range and (mode == 'v' or mode == 'V') then
-    range = range_from_selection(bufnr, mode)
+    range = utils.range_from_selection(bufnr, mode)
   end
 
   local has_multiple_ranges = range and #range > 0 and type(range[1]) == 'table'
@@ -272,10 +247,7 @@ M.run_lsp = function(opts)
   end
 
   local user_filter = type(lsp_opts.filter) == 'function' and lsp_opts.filter or nil
-  local user_opts = vim.deepcopy(lsp_opts)
-  user_opts.filter = nil
-
-  local format_opts = utils.merge({}, user_opts)
+  local format_opts = vim.deepcopy(lsp_opts)
   format_opts.bufnr = bufnr
   format_opts.async = async
   format_opts.range = resolved_range

@@ -106,7 +106,7 @@ Behavior:
 - Else `opts.params` replaces automatic position construction and must include
   `textDocument` and `range`; optional `context` is preserved, and missing
   diagnostics are populated automatically.
-- Else builds `range` from `'<` and `'>` marks.
+- Else builds `range` from the active visual selection, or from `'<` and `'>` marks outside visual mode.
 
 ### Usage examples
 
